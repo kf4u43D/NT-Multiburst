@@ -1,0 +1,16 @@
+{
+  "verified_on": "2026-10-15",
+  "target_firmware": "1.18.0",
+  "firmware_release_date": "2026-09-04",
+  "firmware_source": "https://www.expert-sleepers.co.uk/distingNTfirmwareupdates.html",
+  "sdk_repository": "https://github.com/expertsleepersltd/distingNT_API",
+  "sdk_commit": "f440d20c2a96a9ca43892c7418a1d8185ad47eb5",
+  "sdk_header_sha256_lf": "2fb0a626ee495cd69d7c2c68aa3ec1206ca7f853e7967aad8f709fc4613e4206",
+  "api_version": 13,
+  "minimum_firmware": "1.15.0",
+  "emulator_api_version": 8,
+  "thorinside_repository": "https://github.com/thorinside/nt_mcp",
+  "thorinside_commit": "3047bb232d9487fe075d48d12f48115383adf728",
+  "skill_path": "claude-plugin/skills/disting-nt-cpp-plugin-writer/SKILL.md",
+  "manual_url": "https://www.expert-sleepers.co.uk/downloads/manuals/disting_NT_user_manual_1.18.pdf"
+}

@@ -1,0 +1,8 @@
+Checks: >-
+  -*,clang-analyzer-*,bugprone-*,performance-*,
+  -bugprone-incorrect-roundings,-bugprone-easily-swappable-parameters
+WarningsAsErrors: '*'
+HeaderFilterRegex: 'include[/\\]multi_burst[/\\]'
+# Rounding inputs are finite, clamped and nonnegative; +0.5 truncation is intended.
+# Callback argument order is fixed by the SDK; tested bus/voltage helpers use it explicitly.
+# Upstream SDK ABI declarations are excluded from the project header filter.
