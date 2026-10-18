@@ -1,128 +1,101 @@
-# Développement
+# Development
 
-## Récupérer les sources et les dépendances
-
-Le dépôt [NT-Multiburst](https://github.com/kf4u43D/NT-Multiburst) contient les
-sources du plugin, ses tests, les scripts de compilation et les presets.
+## Sources and dependencies
 
 ```powershell
 git clone https://github.com/kf4u43D/NT-Multiburst.git
 cd NT-Multiburst
 ```
 
-Un instantané minimal du SDK officiel est inclus dans
-`third_party/distingNT_API` : ses cinq en-têtes et sa
-[licence MIT](../third_party/distingNT_API/LICENSE), sans historique Git ni
-exemples. Il provient du commit `f440d20c2a96a9ca43892c7418a1d8185ad47eb5`
-du 3 août 2026, avec l'API 13. Aucun sous-module ni téléchargement supplémentaire
-n'est nécessaire pour compiler le plugin ou exécuter les tests natifs.
+The repository includes the plugin sources, tests, build scripts, presets and a
+minimal official SDK snapshot: five public headers and the
+[MIT license](../third_party/distingNT_API/LICENSE) in `third_party/distingNT_API`.
+The snapshot is pinned to API 13, commit
+`f440d20c2a96a9ca43892c7418a1d8185ad47eb5`. No submodule or additional download is
+required to build the plugin or run native tests. Hardware firmware must be
+1.15.0 or later; the validation target is 1.18.0.
 
-`sdk.lock.json` conserve le commit amont, le contrat API et l'empreinte SHA-256
-de `api.h` après normalisation des fins de ligne en LF. Avant la compilation
-ARM, `scripts/build.ps1` contrôle l'API et cette empreinte. Si le répertoire du
-SDK contient aussi un checkout Git complet, son commit est vérifié également.
-L'inspection de l'objet contrôle les imports contre `api.h` et les signatures
-JSON exactes déclarées dans `serialisation.h`.
+`sdk.lock.json` records the upstream commit, API contract and SHA-256 of `api.h`
+with LF line endings. The ARM build checks the API and hash, and also the commit
+when the SDK directory is a full Git checkout. Object inspection checks host
+imports against `api.h` and exact JSON method signatures against
+`serialisation.h`.
 
-Les dépôts amont complets restent utiles pour consulter leurs exemples ou
-travailler sur l'émulateur. Ils peuvent être clonés à côté du projet, sans
-modifier l'instantané utilisé par les compilations :
+Optional upstream repositories can be cloned beside the project for examples
+and emulator development:
 
 ```powershell
-git clone https://github.com/expertsleepersltd/distingNT_API.git ../distingNT_API-complet
-git -C ../distingNT_API-complet checkout --detach f440d20c2a96a9ca43892c7418a1d8185ad47eb5
+git clone https://github.com/expertsleepersltd/distingNT_API.git ../distingNT_API-full
+git -C ../distingNT_API-full checkout --detach f440d20c2a96a9ca43892c7418a1d8185ad47eb5
 git clone https://github.com/thorinside/nt_emu.git ../nt_emu
 git -C ../nt_emu checkout --detach ad2aa4b610f39c32903e3b7403cf2f2335508ca1
 git clone https://github.com/thorinside/nt_mcp.git ../nt_mcp
 git -C ../nt_mcp checkout --detach 3047bb232d9487fe075d48d12f48115383adf728
 ```
 
-Les ressources `nt_mcp` et son skill
-`claude-plugin/skills/disting-nt-cpp-plugin-writer/SKILL.md` ont servi de
-documentation pendant le développement ; ils ne sont pas des dépendances de
-compilation. Le clone de `nt_emu` n'est pas utilisé par le build de la DLL du
-plugin, qui se connecte à l'émulateur installé. Les PDF des manuels ne sont pas
-redistribués ; leurs liens officiels figurent dans [research.md](research.md).
+`nt_mcp` and its `disting-nt-cpp-plugin-writer` skill were development references,
+not build dependencies. The DLL build connects to the installed emulator and
+does not use the `nt_emu` source checkout. External manuals are not redistributed;
+official links are in [research.md](research.md).
 
-Le 15 octobre 2026, l'audit a corrigé l'import initial du SDK de développement
-API 14 : cette API a été introduite le 29 septembre, après la sortie du firmware
-stable 1.18.0. L'objet ARM fixe désormais explicitement son contrat à
-`kNT_apiVersion13` au lieu de suivre `kNT_apiVersionCurrent`. L'API 13 existe
-depuis le firmware 1.15.0 ; la cible de validation reste 1.18.0. Le [rapport de
-validation](validation.md) suit la recompilation et les contrôles des artefacts
-après correction ; le chargement sur NT physique reste à effectuer.
-
-Les livrables publiés sont regroupés dans
-[`downloads/v0.4`](../downloads/v0.4/). Les répertoires `build` et `dist` restent
-des sorties locales régénérables, exclues du suivi Git. La référence DROID
-utilisée pour les sons usine est conservée sous `ref/droid-v2.3.1.ini`.
+Published artifacts are in [`downloads/v0.4`](../downloads/v0.4/). `build` and
+`dist` are generated local directories excluded from Git. The DROID reference
+for factory sounds is `ref/droid-v2.3.1.ini`.
 
 ## Architecture
 
-`include/multi_burst/engine.h` et `src/engine.cpp` définissent un moteur indépendant
-de l'hôte. `src/multi_burst.cpp` porte le contrat du SDK : métadonnées, paramètres,
-bus, MIDI et affichage. `include/multi_burst/parameters.h` fige les indices des
-paramètres et les divisions.
+- `include/multi_burst/engine.h` and `src/engine.cpp`: host-independent engine.
+- `src/multi_burst.cpp`: SDK metadata, parameters, buses, MIDI and display.
+- `include/multi_burst/parameters.h`: persistent parameter indices and divisions.
+- `include/multi_burst/presets.h`: DROID factory sounds and per-voice bank fields.
+- `include/multi_burst/performance_presets.h`: 16 complete two-voice scenes.
 
-Depuis la version 0.2, deux moteurs partagent `MusicalClock` et possèdent chacun
-un `MusicalTiming` pour leur rapport d'intervalle. Le mode absolu historique reste
-disponible. `include/multi_burst/presets.h` décrit les valeurs usine extraites
-de `ref/droid-v2.3.1.ini` et les valeurs propres aux mémoires de générateur.
-`include/multi_burst/performance_presets.h` ajoute les 16 scènes du pack 0.4,
-avec leurs deux voix et les réglages communs, indépendamment des banques DROID.
-Les [écarts de référence](reference-comparison.md) explicitent les conventions
-préservées et l'adaptation de la détection Auto aux bus NT.
+Two engines share `MusicalClock`, with a separate `MusicalTiming` for each
+voice's interval ratio. Absolute timing remains available. The
+[reference comparison](reference-comparison.md) explains the preserved
+conventions and Auto clock detection on NT buses.
 
-L'instance est construite par placement new dans la DTC demandée à l'hôte.
-Le calcul audio ne réserve pas de mémoire dynamique. Les événements UI passent
-par des indicateurs atomiques ; les callbacks MIDI et le moteur s'exécutent sur
-le thread audio. Les états d'affichage sont des instantanés atomiques.
+The instance is constructed with placement new in host-provided DTC memory.
+Audio processing performs no dynamic allocation. UI events use atomic flags;
+MIDI callbacks and the engine run on the audio thread. Display data uses atomic
+snapshots. All CV inputs for a sample are read before any outputs are written,
+including when input and output buses overlap.
 
-Les 32 mémoires utilisateur utilisent un stockage atomique fixe. Leur lecture
-audio est bornée : en cas de modification concurrente, un rappel conserve les
-paramètres en place. La sérialisation hors audio attend un instantané cohérent.
-Le JSON versionné contient des enregistrements plats de 27 nombres (voix,
-emplacement et 25 champs), compatibles avec le parseur nt_emu 2.0.2. Un document
-invalide ne remplace pas partiellement les banques. Tous les CV d'un échantillon
-sont lus avant les écritures, même lorsque des bus d'entrée/sortie se recouvrent.
+The 32 user slots use fixed atomic storage. Audio reads are bounded: a recall
+keeps the current parameters if a concurrent write prevents a consistent read.
+Non-audio serialization waits for a coherent snapshot. Versioned JSON stores
+flat records of 27 numbers: voice, slot and 25 fields. This works with nt_emu
+2.0.2; invalid documents cannot partially replace the banks.
 
-Les formes utilisent des polynômes à coût borné et des phases entières Q48 ;
-les conversions et divisions de temporisation sont recalculées quand leurs
-entrées changent. Il n'y a pas de dépendance CMSIS ni de fonctions trigonométriques
-ou exponentielles de bibliothèque dans le calcul.
+Shapes use bounded polynomials and integer Q48 phases. Timing conversions and
+divisions are recalculated when their inputs change. There is no CMSIS
+dependency or library trigonometric/exponential call in processing. Optional
+DROID logarithms use range reduction and a fixed-length series. Glide smooths
+only the slope gain. Count, slope and velocity are captured at the trigger;
+mute leaves events and progression running. EOC retains its width across loops.
 
-Les logarithmes DROID optionnels utilisent une réduction d'intervalle et une
-série de longueur fixe. Le glide lisse uniquement le gain de pente. Les valeurs
-de count, slope et vélocité restent capturées au trigger ; le mute laisse les
-événements et la progression actifs. L'EOC conserve sa largeur pendant une boucle.
+`CvResponse` is a shared parameter. `Legacy / DROID / Morph` reuse the existing
+curve field without changing bank records. Morph evaluates neighboring shapes
+at the same phase and interpolates their outputs. Bipolar timing uses a bounded
+approximation of `2^x` across ±4 octaves. Absolute Width and Rate CV preserve
+fractional timing and phase; Musical timing keeps quantized ratios. Interval CV
+is blended in normalized position before selecting Off.
 
-La version 0.3 ajoute le paramètre global `CvResponse` au dernier indice et étend
-le champ de courbe existant à `Legacy / DROID / Morph`. Aucun champ de banque
-n'est ajouté. Le morphing évalue deux formes à la même phase et interpole leur
-résultat. La réponse temporelle bipolaire utilise une approximation bornée de
-`2^x` sur ±4 octaves ; aucun appel libm n'est introduit. En mode Absolute, les
-CV de largeur et cadence conservent leurs fractions et phases. Le mode Musical
-garde ses rapports quantifiés ; le fondu Interval CV se calcule dans la position
-normalisée avant le choix Off.
+`PackPreset` and `LoadPackPreset` occupy indices 167 and 168. Loading a scene
+applies both voices and shared settings on the audio thread, resets sequences
+without triggering them, and clears queued trigger, step and save events.
+Routing, focus and user banks remain intact. Rack export reads the same C++
+header; scene values are not duplicated in Python.
 
-Le pack 0.4 ajoute `PackPreset` et `LoadPackPreset` aux indices 167 et 168. Son
-chargement applique les deux sons et les réglages communs sur le thread audio,
-puis réinitialise les séquences sans les déclencher. Les événements de trigger,
-step et sauvegarde déjà en attente sont annulés pour ce chargement. Les routages,
-le focus et les banques utilisateur restent en place. Aucun format JSON de banque
-n'est modifié. L'export Rack évalue le même en-tête C++ pour produire les 16 patches
-et le catalogue ; les valeurs des sons ne sont pas dupliquées en Python.
+SDK MIDI clock callbacks have block-level timing without sample timestamps.
+CV clock edges are detected per sample; outgoing MIDI also depends on firmware
+queuing. Native timing results do not measure hardware jitter.
 
-Les callbacks SDK rendent les horloges MIDI au niveau du bloc, sans timestamp
-d'échantillon. La clock CV est détectée par échantillon ; l'émission MIDI dépend
-ensuite de la mise en file par le firmware. Ne pas assimiler une mesure native
-à une mesure de jitter matériel.
+## Build and test on Windows
 
-## Compiler et tester sous Windows
-
-Prérequis : Python 3, Arm GNU Toolchain (`arm-none-eabi-g++` et binutils),
-Clang++ avec runtime C++ Windows ou MinGW. Les outils disponibles lors de cette
-création étaient ARM GCC 14.3 et LLVM Clang 22.1.
+Requirements: Python 3, Arm GNU Toolchain (`arm-none-eabi-g++` and binutils),
+and Clang++ with a Windows C++ runtime or MinGW. The validated toolchain uses
+ARM GCC 14.3 and LLVM Clang 22.1.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
@@ -130,63 +103,65 @@ clang-tidy -p build/native src/engine.cpp src/multi_burst.cpp
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1
 ```
 
-Le premier script compile et exécute les suites moteur et adaptation SDK.
-Il enregistre aussi les arguments réels dans `build/native/compile_commands.json`
-pour l'analyse statique. `.clang-tidy` documente les exceptions propres au SDK
-et aux arrondis positifs bornés.
-Le second produit l'objet ARM relogeable, l'inspecte puis prépare l'archive
-MicroSD. Les avertissements sont traités comme erreurs.
+The test script runs engine and SDK integration suites and records compiler
+arguments in `build/native/compile_commands.json`. `.clang-tidy` documents SDK
+and bounded positive-rounding exceptions. The build script creates and inspects
+the relocatable ARM object, then packages it for MicroSD. Warnings are errors.
 
-Sorties :
+Outputs:
 
-- `build/native/engine_tests.exe` et `plugin_tests.exe` ;
-- `build/arm/object_report.json` avec sections, symboles et empreinte ;
-- `dist/programs/plug-ins/multi_burst.o` ;
-- `dist/multi_burst_nt.zip`, contenant exactement ce chemin ;
-- `dist/build_manifest.json` avec outil et SHA-256.
+- `build/native/engine_tests.exe` and `plugin_tests.exe`;
+- `build/arm/object_report.json`: sections, symbols and hashes;
+- `dist/programs/plug-ins/multi_burst.o`;
+- `dist/multi_burst_nt.zip`, containing exactly that path;
+- `dist/build_manifest.json`: tools and SHA-256 hashes.
 
-L'objet est compilé Cortex-M7, Thumb, FPU `fpv5-d16`, hard float, `-fPIC`, `-Os`,
-sans RTTI, exceptions ni runtime d'initialisation statique. Deux unités sont
-liées par `-r -nostdlib` pour conserver un objet relogeable. Le vérificateur exige
-ELF32 little endian ARM REL EABI5, ABI VFP et un `pluginEntry` global.
-Il refuse les imports imprévus ; `_GLOBAL_OFFSET_TABLE_` est le pseudo-symbole
-du linker GNU pour le code PIC. Les fonctions de l'hôte utilisées sont contrôlées
-contre le SDK figé ; les routines mémoire C autorisées restent visibles dans le
-rapport.
+The ARM target is Cortex-M7, Thumb, `fpv5-d16`, hard float, `-fPIC`, `-Os`, without
+RTTI, exceptions or static initialization runtime. Two units are linked with
+`-r -nostdlib`. Inspection requires ELF32 little-endian ARM REL EABI5, VFP ABI and
+a global `pluginEntry`. Unexpected imports are rejected. `_GLOBAL_OFFSET_TABLE_`
+is the GNU PIC linker pseudo-symbol; permitted C memory routines remain visible
+in the report. The nine JSON methods are checked by exact demangled signature
+against the pinned SDK, without permitting other C++ imports. The Windows bridge
+resolves these methods explicitly from emulator exports.
 
-Les méthodes C++ JSON utilisées sont vérifiées par signature exacte après
-démanglage et contre `serialisation.h` du SDK figé ; ce contrôle n'autorise
-aucun autre import C++. Le bridge Windows résout explicitement ces neuf méthodes
-dans les exports de l'émulateur pour le rappel des banques.
+## Publish an NT release
 
-## Contrats à préserver
+Run `python scripts/prepare-downloads.py`, set the version in
+`.github/nt-release.json`, then push to `main`. Changing that configuration
+triggers **Publish NT release**; it can also be run manually from GitHub Actions.
 
-Le GUID est `MbNt`. Les paramètres sont persistés par indice : ajouter les
-nouveaux à la fin et changer seulement leur présentation dans les pages.
-Préserver également le contrat API 13 explicite de l'objet ARM : une montée de
-SDK ne doit pas modifier à elle seule l'API annoncée à l'hôte.
-Les sorties Add/Replace s'appliquent à chaque bus ; None doit être traité avant
-`bus - 1`. Le dernier bus légal est donné par `kNT_lastBus`, actuellement 64.
-Reset gagne sur les événements simultanés. Les notes sortantes conservent leur
-ancienne destination jusqu'au Note Off, même si les paramètres changent.
+The workflow verifies the NT ZIP layout and the ZIP/object hashes against the
+download manifest, then attaches `multi_burst_nt.zip`, `multi_burst.o` and
+`SHA256SUMS.txt` to the release. Use a new version for a new release: an already
+published release is left unchanged.
 
-Les profils de courbe exacts et les détails non publiés du matériel AJH sont
-documentés comme choix indépendants dans `research.md`.
+## Persistent contracts
 
-## Niveaux de preuve
+Keep GUID `MbNt` and existing parameter indices. Append new parameters, then
+arrange them through pages. The ARM object must continue to declare API 13
+explicitly unless compatibility is deliberately changed. Updating the SDK alone
+must not change the API advertised to the host.
 
-Le banc VCV Rack est décrit dans `patches/README.md`. La compilation desktop
-utilise `emu/multi_burst_compat.h` et `emu/nt_emu_bridge.cpp` ; le moteur et
-l'adaptateur firmware restent les mêmes sources. Pour nt_emu 2.0.2, la DLL
-annonce l'API 8 minimale nécessaire à ses callbacks et limite les routages à
-28 bus. L'objet ARM annonce explicitement l'API 13 et conserve 64 bus.
+Apply Add/Replace independently to each output bus. Handle None before `bus - 1`.
+Use `kNT_lastBus` for the highest legal bus, currently 64. Reset wins over
+simultaneous events. Outgoing MIDI notes keep their original destination until
+Note Off, even if routing changes.
 
-Le bridge résout les exports Windows de nt_emu et remet les écritures de
-paramètres et leurs callbacks sur l'instance concernée. Cette adaptation est
-contenue dans le projet ; elle n'utilise aucun fichier d'un autre plugin.
-L'export global de fréquence de nt_emu 2.0.2 annonce 48 kHz ; le patch doit être
-joué à cette fréquence. Les destinations MIDI matérielles du NT sont envoyées
-au port MIDI choisi dans l'émulateur.
+Independent curve choices and undocumented AJH behavior are described in
+[research.md](research.md).
+
+## Rack and hardware validation
+
+The [Rack guide](../patches/README.md) covers the desktop patches.
+`emu/multi_burst_compat.h` and `emu/nt_emu_bridge.cpp` adapt the same engine and
+firmware adapter sources. With nt_emu 2.0.2, the DLL advertises API 8 and limits
+routing to 28 buses. The ARM object advertises API 13 and supports 64 buses.
+
+The bridge resolves Windows exports and forwards parameter writes and callbacks
+to the correct instance. It is self-contained. nt_emu 2.0.2 reports 48 kHz
+globally, so use that Rack sample rate. NT hardware MIDI destinations map to the
+emulator's selected MIDI port.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-emu.ps1
@@ -194,39 +169,30 @@ python scripts/create-rack-patch.py
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-rack.ps1
 ```
 
-Les essais Rack nécessitent VCV Rack 2, Fundamental, nt_emu et le Rack SDK
-Windows correspondant, installés séparément. Le script utilise le paramètre
-`-RackSdkPath` ou la variable d'environnement `RACK_SDK_PATH`. En leur absence,
-il cherche successivement `Rack-SDK`, `third_party/Rack-SDK`, puis
-`third_party/nt_emu/vcv-plugin/Rack-SDK` sous la racine du projet. Le SDK doit
-contenir `include/rack.hpp` et `libRack.dll.a` ; un chemin absent ou incomplet
-produit une erreur explicite. `-RackDirectory`, `-RackPluginsPath` et `-Compiler`
-permettent d'adapter les autres installations.
+Install VCV Rack 2, Fundamental, nt_emu and the matching Windows Rack SDK
+separately. Supply `-RackSdkPath` or `RACK_SDK_PATH`. Otherwise the script searches
+`Rack-SDK`, `third_party/Rack-SDK`, then `third_party/nt_emu/vcv-plugin/Rack-SDK`
+under the project root. The SDK must contain `include/rack.hpp` and
+`libRack.dll.a`. `-RackDirectory`, `-RackPluginsPath` and `-Compiler` override the
+other installation paths.
 
-Après avoir déplacé ou cloné le projet, régénérer les patches avec les scripts
-du projet pour qu'ils enregistrent le chemin local de la DLL. Pour réexporter
-les 16 scènes et vérifier le pack :
+Regenerate patches after moving or cloning the project so they store the local
+DLL path. To export and verify all scenes:
 
 ```powershell
 python scripts/create-rack-patch.py --motion
 python scripts/export-preset-pack.py --library dist/nt_emu/multi_burst.dll
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-rack.ps1 -PresetPack
+python scripts/prepare-downloads.py
 ```
 
-Le test Rack charge les bibliothèques installées et exécute leur DSP sans ouvrir
-la fenêtre de Rack ni remplacer ses réglages ou son autosave. Son rapport est
-dans `build/rack-smoke/result.txt` et son journal dans `rack-smoke.log`.
+The Rack test runs installed DSP libraries without opening Rack or replacing
+its settings/autosave. Results are in `build/rack-smoke/result.txt` and
+`rack-smoke.log`. Native tests exercise transitions, timing and routing through
+a simulated API; ARM inspection checks format and dependencies; Rack tests
+exercise a separate host implementation. Loading, physical UI, voltages,
+external jitter, MIDI transport, CPU use and coexistence with other algorithms
+still require a physical disting NT.
 
-Les tests natifs contrôlent les transitions, la durée et le routage via une
-simulation de l'API. L'inspection ARM contrôle le format et les dépendances.
-Le chargement, l'UI physique, les tensions, le jitter externe, la charge CPU et
-la coexistence avec d'autres algorithmes doivent être vérifiés sur un NT.
-
-`nt_emu` facilite les essais interactifs, avec des routes limitées à 28 bus et
-des morceaux d'API simulés. Les essais du DSP de ses bibliothèques installées
-apportent une preuve distincte des tests natifs ; ils ne vérifient pas les prises
-physiques ou le transport MIDI du disting NT.
-
-Chaque mise à jour doit conserver les contrats persistés, reconstruire les
-livrables et actualiser le rapport de validation. Les vérifications locales
-décrites ici ne remplacent pas les essais sur un disting NT physique.
+For each update, preserve persisted contracts, rebuild artifacts and update the
+[validation report](validation.md).

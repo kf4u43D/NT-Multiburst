@@ -1,0 +1,90 @@
+name: Publish NT release
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/nt-release.json]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nt-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Verify and prepare NT assets
+        id: assets
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import shutil
+          import zipfile
+
+          version = json.loads(Path('.github/nt-release.json').read_text())['version']
+          if not re.fullmatch(r'\d+\.\d+(?:\.\d+)?', version):
+              raise ValueError('Invalid release version')
+          source = Path('downloads') / f'v{version}'
+          manifest = json.loads((source / 'manifest.json').read_text())
+          if manifest['version'] != version:
+              raise ValueError('Release version does not match the download manifest')
+          archive = source / 'multi_burst_nt.zip'
+          digest = lambda data: hashlib.sha256(data).hexdigest()
+          expected = next(f for f in manifest['files'] if f['path'] == archive.name)
+          if digest(archive.read_bytes()) != expected['sha256']:
+              raise ValueError('NT archive checksum mismatch')
+          with zipfile.ZipFile(archive) as package:
+              if package.namelist() != ['programs/plug-ins/multi_burst.o']:
+                  raise ValueError('Unexpected NT archive layout')
+              obj = package.read(package.namelist()[0])
+          if digest(obj) != manifest['object_sha256']:
+              raise ValueError('NT object checksum mismatch')
+          destination = Path('build/nt-release')
+          destination.mkdir(parents=True, exist_ok=True)
+          shutil.copyfile(archive, destination / archive.name)
+          (destination / 'multi_burst.o').write_bytes(obj)
+          assets = [archive.name, 'multi_burst.o']
+          (destination / 'SHA256SUMS.txt').write_text(''.join(
+              f'{digest((destination / name).read_bytes())}  {name}\n' for name in assets))
+          Path('build/nt-install.md').write_text(
+              'Dual burst envelope generator for the Expert Sleepers disting NT, with 16 built-in presets.\n\n'
+              'Requires firmware 1.15 or later (API 13).\n\n'
+              '1. Download **multi_burst_nt.zip** below.\n'
+              '2. Extract it to the root of the MicroSD card: `programs/plug-ins/multi_burst.o`.\n'
+              '3. Insert the card, restart the disting NT and add **Multi Burst NT**.\n\n'
+              'The standalone `.o` is also provided for manual installation.\n')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'tag=v{version}\n')
+          PY
+      - name: Publish verified NT assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.assets.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --json isDraft > build/existing-release.json 2>/dev/null; then
+            if [ "$(python -c "import json; print(json.load(open('build/existing-release.json'))['isDraft'])")" = "False" ]; then
+              echo "Release $RELEASE_TAG is already published; leaving it unchanged."
+              exit 0
+            fi
+          else
+            gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --title "Multi Burst NT $RELEASE_TAG" --notes-file build/nt-install.md --draft
+          fi
+          gh release upload "$RELEASE_TAG" build/nt-release/* --clobber
+          gh release edit "$RELEASE_TAG" --draft=false --latest

@@ -91,7 +91,7 @@ def create_patch(library: Path, motion: bool = False) -> dict:
     scope_values = [1, -4, 1, -2.5, -2, 0, 0, 1]
     modules = [
         module(1, "Core", "Notes", 0, 0, data={"text":
-            "MULTI BURST NT\nTEST CV / MIDI\n\nEngine : 48 kHz\n\nPULSES :\n1 = TRIGGER\n2 = RESET\n\n8 bursts / 4 Hz\nWidth : 100 ms\nSlope : +100 %\nLevel : 8 V\n\nSCOPES :\n1 Envelope / Gate\n2 Active / EOC\n3 Clock / LFO\n\nPOT NT droit :\npression = STEP\n\nAUDIO : choisir\ndriver et sortie"}),
+            "MULTI BURST NT\nCV / MIDI TEST\n\nEngine : 48 kHz\n\nPULSES :\n1 = TRIGGER\n2 = RESET\n\n8 bursts / 4 Hz\nWidth : 100 ms\nSlope : +100 %\nLevel : 8 V\n\nSCOPES :\n1 Envelope / Gate\n2 Active / EOC\n3 Clock / LFO\n\nRIGHT NT KNOB :\npress = STEP\n\nAUDIO : select\ndriver and output"}),
         module(2, "Fundamental", "LFO", 16, 0, [1, 0, 2, 0, 0, .05, 0]),
         module(3, "Fundamental", "Pulses", 25, 0, [0] * 10),
         module(4, "nt_emu", "nt_emu", 33, 0, [0] * 12, nt_data),
@@ -105,7 +105,7 @@ def create_patch(library: Path, motion: bool = False) -> dict:
             "audio": {"driver": -1, "sampleRate": 48000, "blockSize": 256,
                       "inputOffset": 0, "outputOffset": 0}, "dcFilter": True}),
         module(12, "Core", "Notes", 0, 1, data={"text":
-            "ECOUTE\nSinus -> VCA ENV\n-> volume -> AUDIO\n\nTESTS :\nSlope 0 : uniforme\nSlope -100 : baisse\nONE : ignore trigger\nRET : redemarre\nReset : silence\nRate 0 : en interne\nSTEP : manuel\n\nMENU NT :\nClock source\nCV / interne / MIDI\nShape / Width\n\nMIDI canal 1\nNote 60 : trigger\n61 : reset / 62 : step\nCC 20-26 : controle\nSorties MIDI : menu\nchoisir peripherique"}),
+            "LISTEN\nSine -> ENV VCA\n-> volume -> AUDIO\n\nTESTS :\nSlope 0 : uniform\nSlope -100 : falling\nONE : ignore trigger\nRET : restart\nReset : silence\nRate 0 : internal off\nSTEP : manual\n\nNT MENU :\nClock source\nCV / internal / MIDI\nShape / Width\n\nMIDI channel 1\nNote 60 : trigger\n61 : reset / 62 : step\nCC 20-26 : control\nMIDI output : menu\nselect device"}),
     ]
     connections = [
         (2, 3, 4, 1, "#e6c84c"),     # External CV clock.
@@ -126,12 +126,12 @@ def create_patch(library: Path, motion: bool = False) -> dict:
     ]
     if motion:
         modules[0]["data"]["text"] = (
-            "MULTI BURST NT\nMOTION / 2 VOIX\n\nEngine : 48 kHz\n\nPULSES :\n1 = TRIGGER ALL\n2 = RESET ALL\n\nG1 : 8 bursts\nG2 : 13 bursts\nLoop / ONE\n\nAbsolute\nInternal + CV\nCV : Bipolar\nShape : Morph\n\nSCOPES 1-3 :\nENV / GATE\nBUSY / EOC\nCLOCK / LFO")
+            "MULTI BURST NT\nMOTION / 2 VOICES\n\nEngine : 48 kHz\n\nPULSES :\n1 = TRIGGER ALL\n2 = RESET ALL\n\nG1 : 8 bursts\nG2 : 13 bursts\nLoop / ONE\n\nAbsolute\nInternal + CV\nCV : Bipolar\nShape : Morph\n\nSCOPES 1-3 :\nENV / GATE\nBUSY / EOC\nCLOCK / LFO")
         # A slow external clock combines with each voice's independently
         # modulated internal oscillator. The modulation LFOs run freely.
         modules[1]["params"][2]["value"] = 1.4329594073  # 2**pitch = 2.7 Hz.
         modules[11]["data"]["text"] = (
-            "ECOUTE G1\nSinus -> VCA ENV\n-> volume -> AUDIO\n\nChoisir driver\net sortie audio.\nVolume : 15 %.\n\n3 LFO LENTS\nBipolaires -5/+5 V\nWidth : 0.125 Hz\nInterval : 0.088 Hz\nShape : 0.051 Hz\n\nSCOPES 4-5 :\nG2 ENV / Shape CV\nWidth / Interval CV\n\nComparer :\nCV response DROID\nShape response DROID\nTime depth = 0\n\nPULSES 2 : stop\nPULSES 1 : relance")
+            "LISTEN TO G1\nSine -> ENV VCA\n-> volume -> AUDIO\n\nSelect driver\nand audio output.\nVolume : 15 %.\n\n3 SLOW LFOs\nBipolar -5/+5 V\nWidth : 0.125 Hz\nInterval : 0.088 Hz\nShape : 0.051 Hz\n\nSCOPES 4-5 :\nG2 ENV / Shape CV\nWidth / Interval CV\n\nCompare :\nCV response DROID\nShape response DROID\nTime depth = 0\n\nPULSES 2 : stop\nPULSES 1 : restart")
         modules.extend([
             module(13, "Fundamental", "LFO", 47, 1, [0, 0, -3, 0, 0, .5, 0]),
             module(14, "Fundamental", "LFO", 56, 1, [0, 0, -3.5, 0, 0, .5, 0]),

@@ -1,102 +1,161 @@
-# Recherche et choix de conception
+# References and design choices
 
-Sources consultées le **14 octobre 2026**, avec correction de la cible SDK le **15 octobre 2026**. Ce document distingue les faits publiés par les fabricants, les règles de développement du disting NT et les conventions choisies pour cette implémentation indépendante.
+These sources distinguish published manufacturer behavior from the independent
+implementation choices used by this plugin. They were reviewed in October 2026.
 
-## Versions de référence
+## Firmware and SDK
 
-La dernière version publiée du firmware disting NT, à cette date, est **1.18.0**, sortie le **4 septembre 2026**. La version et la date sont vérifiées dans le [tableau officiel Expert Sleepers](https://www.expert-sleepers.co.uk/distingNTfirmwareupdates.html). Ce tableau constitue la référence pour le firmware ; le numéro d'API doit être vérifié séparément dans le SDK.
+The validation target is disting NT firmware **1.18.0**, released on
+**4 September 2026**, according to the
+[official firmware table](https://www.expert-sleepers.co.uk/distingNTfirmwareupdates.html).
+Firmware and SDK API versions are separate compatibility contracts.
 
-Le [SDK officiel distingNT_API](https://github.com/expertsleepersltd/distingNT_API) est importé dans `third_party/distingNT_API` à la révision **f440d20c2a96a9ca43892c7418a1d8185ad47eb5**, datée du **3 août 2026**. C'est la dernière révision précédant la sortie du firmware 1.18.0. Son [en-tête api.h à cette révision](https://github.com/expertsleepersltd/distingNT_API/blob/f440d20c2a96a9ca43892c7418a1d8185ad47eb5/include/distingnt/api.h) définit `kNT_apiVersionCurrent = kNT_apiVersion13`. Le plugin matériel annonce explicitement `kNT_apiVersion13`, disponible à partir du firmware **1.15.0** ; le firmware **1.18.0** demeure la cible de validation.
+The [official SDK](https://github.com/expertsleepersltd/distingNT_API) snapshot is
+pinned to **f440d20c2a96a9ca43892c7418a1d8185ad47eb5**, dated **3 August 2026**.
+Its [api.h](https://github.com/expertsleepersltd/distingNT_API/blob/f440d20c2a96a9ca43892c7418a1d8185ad47eb5/include/distingnt/api.h)
+defines `kNT_apiVersionCurrent = kNT_apiVersion13`. The hardware plugin explicitly
+advertises API 13, supported since firmware **1.15.0**. API 14, introduced in the
+SDK on 29 September 2026, must not be inferred to work with firmware 1.18.0.
 
-**Correction du 15 octobre 2026 :** la première compilation avait importé le SDK de développement API 14 et annonçait automatiquement `kNT_apiVersionCurrent`. Or l'API 14 a été introduite dans le SDK le **29 septembre 2026**, après la sortie du firmware stable 1.18.0. Le nom de la constante « Current » n'établissait donc pas la compatibilité avec ce firmware. Le correctif épingle le SDK API 13 et fixe le contrat annoncé par l'objet ARM indépendamment des futurs changements de cette constante. La recompilation et le contrôle des artefacts sont suivis dans le [rapport de validation](validation.md) ; aucune validation physique n'est revendiquée.
+Pinned revisions make builds reproducible. Changing the target firmware or SDK
+requires fresh checks of signatures, imports and ARM object loading. See the
+[validation report](validation.md) for software results; hardware testing is
+pending.
 
-Ces révisions sont figées pour rendre la compilation reproductible. Un changement de firmware cible ou de SDK demande une nouvelle vérification des signatures, des fonctions utilisées et du chargement de l'objet ARM.
+## Published AJH Multi Burst Envelopes behavior
 
-## Fonctionnement publié du Multi Burst Envelopes
+The [official AJH Synth page](https://ajhsynth.com/MultiBurst.html) describes:
 
-La [fiche officielle AJH Synth](https://ajhsynth.com/MultiBurst.html) fournit les caractéristiques suivantes :
-
-| Fonction | Comportement publié |
+| Feature | Published behavior |
 | --- | --- |
-| Séquence | 1 à 40 enveloppes ; une seule correspond à une enveloppe AD. |
-| Formes, dans l'ordre | Sine, Log Down, Log Up, Expo Down, Ramp Up, Triangle, Ramp Down, Pulse. |
-| Largeur | 20 ms à 2,5 s ; contrôle par CV. |
-| Cadence interne | Arrêt, puis 0,24 à 51 Hz ; contrôle par CV. |
-| Amplitude | Sortie 0 à +10 V ; pente de séquence ascendante 4 à 100 %, descendante 100 à 4 %, ou uniforme. |
-| Horloge externe | Une impulsion produit l'enveloppe suivante ; cadence irrégulière acceptée ; combinaison avec le LFO interne possible. |
-| Déclenchement | ONE ignore les nouveaux triggers pendant une séquence ; RET interrompt et redémarre. |
-| Modulation | Forme, largeur et cadence modifiables pendant la séquence ; pente mémorisée au déclenchement. |
-| Sélection de forme | CV de 0 à +5 V remplaçant le sélecteur. |
-| Fin et gate | Séquence active jusqu'à extinction de la dernière enveloppe ; gate commandé par nombre, largeur et cadence. |
+| Sequence | 1–40 envelopes; one burst acts as an AD envelope. |
+| Shapes, in order | Sine, Log Down, Log Up, Expo Down, Ramp Up, Triangle, Ramp Down, Pulse. |
+| Width | 20 ms–2.5 s, with CV control. |
+| Internal rate | Off, then 0.24–51 Hz, with CV control. |
+| Amplitude | 0 to +10 V; rising sequence from 4 to 100%, falling sequence from 100 to 4%, or uniform level. |
+| External clock | Each pulse advances one envelope; irregular timing and combination with the internal LFO are supported. |
+| Triggering | ONE ignores triggers during a sequence; RET interrupts and restarts. |
+| Modulation | Shape, width and rate can change during the sequence; slope is captured at the trigger. |
+| Shape selection | 0 to +5 V CV replaces the selector. |
+| Completion and gate | The sequence remains active until the final envelope ends; gate behavior depends on count, width and rate. |
 
-La fiche attribue la conception à Allan Hall et Tom Wiltshire, d'Electric Druid. Elle ne publie aucune équation de forme ni table d'échantillons. Le [guide vidéo officiel](https://player.vimeo.com/video/703216004) est lié depuis cette fiche, mais son contenu n'a pas pu être exploité dans cette recherche. Le [catalogue officiel des notices](https://ajhsynth.com/downloads.html) n'offrait pas de PDF Multi Burst Envelopes lors de la consultation.
+AJH credits Allan Hall and Tom Wiltshire of Electric Druid. The page publishes
+no curve equations or sample tables. Its linked
+[official video guide](https://player.vimeo.com/video/703216004) was not analyzed.
+The [official manual catalog](https://ajhsynth.com/downloads.html) had no Multi
+Burst Envelopes PDF at the time of review.
 
-## Portée de la reproduction
+## Scope and behavior
 
-Le plugin reprend le principe musical décrit publiquement : des séquences finies d'enveloppes, un contrôle de leur amplitude au fil des répétitions et plusieurs sources de cadence. Les courbes sont une implémentation indépendante. Leur nom et leur intention suivent la référence, mais aucune équivalence des tables, des équations, de la résolution ou des détails analogiques du module AJH n'est revendiquée.
+The plugin implements the published musical principle: finite envelope
+sequences, amplitude progression and several timing sources. Curve names and
+intent follow the reference, but the curves are independent implementations.
+No equivalence of tables, equations, resolution or analog behavior is claimed.
 
-Les documents consultés ne précisent pas la loi exacte de la pente entre deux bursts, la mémorisation du nombre de bursts, le comportement des changements de forme au milieu d'une enveloppe, le premier événement après un trigger, les enveloppes qui se chevauchent ou les collisions d'horloges. Ces points demanderaient des mesures sur un module AJH pour établir une équivalence plus étroite.
+The published sources do not fully specify inter-burst slope laws, count
+capture, mid-envelope shape changes, first-event timing, envelope overlap or
+clock collisions. Closer equivalence would require measurements on an AJH
+module. This plugin uses these explicit conventions:
 
-## Conventions retenues pour le plugin
+- **Count and slope:** captured at the trigger; edits affect the next sequence.
+- **Shape, width and level:** live during playback. Shape can change during the
+  envelope, width changes its phase speed, and level changes its output voltage.
+- **First burst:** selectable immediate trigger response or next-clock start.
+- **Overlap:** a new burst restarts the envelope; envelopes do not sum.
+- **ONE / RET:** ONE protects the sequence through the final envelope; RET
+  restarts it from the beginning.
+- **Reset:** wins over simultaneous trigger and clock events, cancels the
+  sequence, clears phases/counters/gates and releases the plugin's MIDI notes.
+- **EOC:** marks only the natural end of the final envelope, not reset or
+  interruption.
 
-Les règles ci-dessous sont les choix de cette implémentation ; elles définissent des comportements observables et testables.
+Dedicated reset, MIDI, Active/EOC and clock outputs are NT extensions.
 
-- **Nombre et pente** : mémorisés au déclenchement d'une séquence. Une modification s'applique à la suivante.
-- **Forme, largeur et niveau** : actifs pendant la séquence. La forme peut changer sur l'enveloppe en cours ; la largeur modifie sa vitesse de progression et le niveau sa tension de sortie.
-- **Premier burst** : choix entre émission immédiate au trigger et attente du prochain événement d'horloge.
-- **Chevauchement** : le nouveau burst redémarre l'enveloppe ; les enveloppes ne s'additionnent pas.
-- **ONE et RET** : la protection ONE couvre également la dernière enveloppe jusqu'à sa fin ; RET remet la séquence à son début.
-- **Reset** : prioritaire sur les triggers et horloges reçus au même instant. Il annule la séquence, remet les phases et compteurs à zéro, abaisse les gates et libère les notes MIDI appartenant au plugin.
-- **Fin de cycle** : une impulsion EOC indique la fin naturelle de la dernière enveloppe. Un reset ou une interruption ne constitue pas une fin naturelle.
+## CV, MIDI and timing
 
-Le reset dédié, les messages MIDI, les sorties d'activité et de fin de cycle ainsi que les sorties d'horloge sont des extensions pour le NT.
+The plugin provides per-voice and shared actions, plus six shared CV inputs:
+Count, Width, Interval, Slope, Shape and Amplitude. The DROID response retains
+per-voice targets and depths; native NT CV/MIDI mappings remain available.
 
-## CV, MIDI et synchronisation
+Timing sources are internal, CV, MIDI and internal + CV. The combined source
+keeps two independent clocks for interlocking rhythms; it does not phase-lock
+the internal LFO. MIDI clock and transport are system messages, independent of
+the note/CC channel.
 
-Le routage expose des actions par voix et communes, ainsi que six entrées CV partagées pour Count, Width, Interval, Slope, Shape et Amplitude. Le chemin DROID conserve ses cibles et profondeurs par voix ; les mappings CV/MIDI natifs du NT demeurent disponibles.
+Outputs include envelope, burst gate, sequence activity, EOC and clock. Active
+stays high while an armed sequence waits for a clock. Optional buses can be
+disabled; enabled outputs respect Add/Replace settings.
 
-Quatre sources de cadence sont proposées : **interne**, **CV**, **MIDI** et **interne + CV**. Le dernier mode conserve deux sources indépendantes pour produire des rythmes combinés ; il ne suppose pas que le LFO interne soit asservi à la cadence externe. Le mode MIDI traite l'horloge et le transport comme des messages système, distincts du canal des notes et CC.
+MIDI input covers trigger notes, control CCs, clock and transport. Output
+includes burst notes, envelope level CC and clock. CC emission is rate-limited
+and change-driven; it does not have CV timing or amplitude resolution. Routing
+changes, reset and stop must preserve consistent note ownership.
 
-Les sorties CV permettent de router l'enveloppe, le gate de chaque burst, l'état actif de la séquence, l'impulsion EOC et l'horloge. L'état actif reste haut lorsqu'une séquence armée attend sa prochaine horloge. Les bus optionnels doivent pouvoir être désactivés et les sorties respecter le mode d'addition ou de remplacement configuré.
+## Modulation choices
 
-Le contrôle MIDI couvre les notes de déclenchement, les CC de contrôle et les événements d'horloge/transport. Les sorties MIDI couvrent des notes associées aux bursts, une représentation du niveau par CC et une horloge. L'émission de CC doit être limitée en cadence et aux changements utiles ; une sortie MIDI ne possède pas la résolution temporelle ou d'amplitude de la sortie CV. Les changements de configuration, le reset et les messages d'arrêt doivent laisser les notes dans un état cohérent.
+AJH's published live shape, width and rate control, and irregular external clock
+combined with its LFO, inform the Absolute and Internal + CV modes. The source
+does not establish an exact CV response equation.
 
-## Réexamen des modulations du 17 octobre 2026
+The supplied DROID patch quantizes timing to 16 ratios and captures count and
+slope at the trigger, while width, shape and amplitude stay live. Mainly
+unipolar targets and multiplicative slope can restrict a bipolar LFO's range.
+The [reference comparison](reference-comparison.md) details these differences.
 
-La [fiche AJH relue le 17 octobre 2026](https://ajhsynth.com/MultiBurst.html) confirme l'intérêt des changements de durée, de cadence et de forme pendant la séquence, ainsi que des clocks irrégulières combinées à la source interne. Le mode Absolute et Internal + CV porte ce principe dans le NT. La fiche ne permet pas de déduire une équation exacte de réponse CV.
+Bipolar additive response applies signed voltages around the control setting,
+with exponential timing modulation in Absolute mode. Shape response=Morph
+crossfades neighboring curves. These are independent NT design choices, not
+claimed AJH features. DROID and Legacy responses remain available. The shared
+CV response is appended to the parameter list; voice banks retain 25 fields,
+with Morph stored in the existing curve field.
 
-Le patch DROID fourni quantifie ses temps sur seize rapports, capture count et pente au trigger, mais laisse durée, forme et amplitude agir en direct. Ses destinations principalement unipolaires et sa pente multiplicative peuvent réduire l'excursion d'un LFO bipolaire. La [comparaison détaillée](reference-comparison.md) sépare ces comportements des possibilités AJH publiées.
+## SDK and real-time constraints
 
-L'amélioration NT ajoute un choix commun Bipolar additive : les tensions signées agissent autour du réglage, avec variation exponentielle des temps Absolute. Shape response=Morph ajoute un fondu continu entre profils voisins. Ces deux réponses sont des conventions nouvelles de cette implémentation ; elles ne sont pas annoncées comme des caractéristiques du module AJH. Les modes DROID et Legacy restent disponibles. Le nouveau choix CV commun est ajouté en fin de paramètres ; les banques de voix restent sur 25 valeurs et mémorisent Morph dans le champ de courbes existant.
+`pluginEntry` advertises hardware API 13 and supplies `_NT_factory`. Callbacks
+declare memory requirements, construct the instance in host allocations,
+process parameters and blocks, and receive MIDI. Parameter-definition and
+page pointers must be initialized at construction. The
+[pinned SDK signatures](https://github.com/expertsleepersltd/distingNT_API/blob/f440d20c2a96a9ca43892c7418a1d8185ad47eb5/include/distingnt/api.h)
+take precedence over secondary examples.
 
-## Syntaxe et bonnes pratiques du SDK
+There are **64 logical buses**: 12 inputs, 8 outputs and 44 auxiliaries. User
+bus numbers are one-based; buffer indices are zero-based. Validate disabled
+routing value 0 before subtracting. The historical `step()` comment referring
+to 28 buses does not match the current constants.
 
-Le plugin exporte `pluginEntry`, qui annonce explicitement son contrat API 13 sur matériel et fournit sa `_NT_factory`. Les callbacks déclarent les besoins mémoire, construisent l'instance dans les allocations de l'hôte, traitent les changements de paramètres, calculent les blocs et reçoivent les messages MIDI. Les pointeurs de définitions et de pages de paramètres doivent être initialisés lors de la construction. Les signatures du [SDK figé](https://github.com/expertsleepersltd/distingNT_API/blob/f440d20c2a96a9ca43892c7418a1d8185ad47eb5/include/distingnt/api.h) priment sur les exemples secondaires.
+`numFramesBy4 * 4` is the block frame count. Each contiguous bus holds that many
+samples. Timing uses `NT_globals.sampleRate`, without assuming 48 kHz or a fixed
+block size.
 
-Le SDK définit **64 bus logiques** : 12 entrées, 8 sorties et 44 auxiliaires. Les numéros affichés à l'utilisateur commencent à 1 ; les indices du tampon commencent à 0. Une valeur de routage 0, lorsqu'elle représente une connexion désactivée, doit être validée avant toute soustraction. Le commentaire historique de `step()` mentionnant 28 bus n'est pas cohérent avec les constantes actuelles.
+The [official example Makefile](https://github.com/expertsleepersltd/distingNT_API/blob/f440d20c2a96a9ca43892c7418a1d8185ad47eb5/examples/Makefile)
+uses Cortex-M7, Thumb, `fpv5-d16`, hard-float ABI and PIC, without RTTI or
+exceptions. The deliverable is a relocatable ARM `.o`; inspect its format,
+`pluginEntry`, sections and external references after building.
 
-`numFramesBy4` représente le nombre de trames divisé par quatre ; le traitement utilise donc `numFramesBy4 * 4`. Les bus se suivent en mémoire, chacun contenant ce nombre de trames. Les temporisations utilisent `NT_globals.sampleRate`, sans supposer une fréquence fixe de 48 kHz ni une taille fixe de bloc.
+Real-time implementation rules:
 
-Le [Makefile des exemples officiels](https://github.com/expertsleepersltd/distingNT_API/blob/f440d20c2a96a9ca43892c7418a1d8185ad47eb5/examples/Makefile) utilise Cortex-M7, Thumb, `fpv5-d16`, ABI flottante matérielle et `-fPIC`, sans RTTI ni exceptions. Le livrable est un objet ARM relogeable `.o` ; sa structure, son symbole `pluginEntry`, ses sections et ses références externes doivent être inspectés après compilation.
+- Use fixed-capacity state/queues and request persistent storage through
+  `calculateRequirements()`.
+- Avoid allocation, disk/network access, waits, logging and unbounded loops in
+  audio processing and control callbacks.
+- Recalculate coefficients on input changes; use constant tables and simple
+  interpolation where useful.
+- Bound indices, counters, CV, frequencies and MIDI; handle non-finite values.
+- Detect CV edges with hysteresis and process reset, trigger, then clock.
+- Preserve published parameter indices and append new parameters.
+- Treat native tests, ARM inspection, emulation and hardware tests as distinct
+  evidence.
 
-Pour le calcul en temps réel :
+The [thorinside disting-nt-cpp-plugin-writer skill](https://github.com/thorinside/nt_mcp/blob/3047bb232d9487fe075d48d12f48115383adf728/claude-plugin/skills/disting-nt-cpp-plugin-writer/SKILL.md),
+revision **3047bb232d9487fe075d48d12f48115383adf728**, informed these practices.
+Its API 13 baseline matches the hardware contract; official SDK declarations
+remain authoritative. Polyphonic-allocation advice applies only to an actual
+polyphonic architecture.
 
-- Utiliser des états et files de capacité fixe, et réserver la mémoire persistante avec `calculateRequirements()`.
-- Éviter allocation dynamique, accès disque ou réseau, attente, journalisation et boucles non bornées dans le calcul audio et les callbacks de contrôle.
-- Calculer les coefficients lorsqu'un paramètre change ; utiliser des tables constantes et une interpolation légère lorsque cela simplifie les courbes.
-- Borner indices, compteurs, valeurs CV, fréquences et données MIDI avant utilisation ; gérer explicitement les valeurs non finies.
-- Détecter les fronts CV avec hystérésis et définir l'ordre reset, trigger puis horloge.
-- Préserver les indices de paramètres après une publication ; ajouter les futurs paramètres à la fin du tableau.
-- Séparer les contrôles natifs, la compilation ARM, l'émulation et les essais physiques : chacun apporte une preuve différente.
+## Hardware checks still required
 
-## Apport du skill de thorinside
-
-Le [skill disting-nt-cpp-plugin-writer de thorinside](https://github.com/thorinside/nt_mcp/blob/3047bb232d9487fe075d48d12f48115383adf728/claude-plugin/skills/disting-nt-cpp-plugin-writer/SKILL.md) est importé dans `third_party/nt_mcp`, à la révision **3047bb232d9487fe075d48d12f48115383adf728**. Il recommande notamment des contrats de comportement explicites, une mémoire fixe, un calcul borné, le traitement cohérent des bus, des tests de transitions, l'inspection de l'objet ARM et une documentation vérifiée contre le code.
-
-Son socle déclaré est **l'API 13**, alignée sur le SDK désormais épinglé et sur le contrat du plugin matériel. Ses instructions de méthode servent de guide ; les déclarations du SDK officiel fixent les signatures et les constantes. Les conseils concernant les allocations polyphoniques ne s'appliquent que lorsqu'une véritable architecture polyphonique est utilisée.
-
-## Validation restant à effectuer
-
-Les essais doivent couvrir les séquences de 1 et 40 bursts, les deux pentes extrêmes, ONE/RET jusque dans la dernière enveloppe, les modifications actives de paramètres, l'absence d'horloge, les sources combinées, les événements simultanés, le reset, les messages d'arrêt et les changements de routage MIDI/CV.
-
-**Aucune validation matérielle sur disting NT ni comparaison mesurée avec le module AJH n'a encore été réalisée.** La compatibilité réelle au chargement, la charge processeur avec d'autres algorithmes, les seuils CV, les tensions aux prises et la stabilité de la synchronisation externe doivent être confirmées sur le module avant une publication destinée à l'usage en production.
+No physical disting NT validation or measured AJH comparison has been performed.
+Hardware testing must confirm loading, CPU use alongside other algorithms,
+CV thresholds/output voltages, external timing and MIDI. Boundary cases include
+1/40 bursts, extreme slopes, ONE/RET through the final envelope, live edits,
+missing/combined clocks, simultaneous events, reset, stop and routing changes.

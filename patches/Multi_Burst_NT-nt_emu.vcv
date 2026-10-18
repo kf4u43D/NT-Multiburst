@@ -17,7 +17,7 @@
         0
       ],
       "data": {
-        "text": "MULTI BURST NT\nTEST CV / MIDI\n\nEngine : 48 kHz\n\nPULSES :\n1 = TRIGGER\n2 = RESET\n\n8 bursts / 4 Hz\nWidth : 100 ms\nSlope : +100 %\nLevel : 8 V\n\nSCOPES :\n1 Envelope / Gate\n2 Active / EOC\n3 Clock / LFO\n\nPOT NT droit :\npression = STEP\n\nAUDIO : choisir\ndriver et sortie"
+        "text": "MULTI BURST NT\nCV / MIDI TEST\n\nEngine : 48 kHz\n\nPULSES :\n1 = TRIGGER\n2 = RESET\n\n8 bursts / 4 Hz\nWidth : 100 ms\nSlope : +100 %\nLevel : 8 V\n\nSCOPES :\n1 Envelope / Gate\n2 Active / EOC\n3 Clock / LFO\n\nRIGHT NT KNOB :\npress = STEP\n\nAUDIO : select\ndriver and output"
       }
     },
     {
@@ -1382,7 +1382,7 @@
         1
       ],
       "data": {
-        "text": "ECOUTE\nSinus -> VCA ENV\n-> volume -> AUDIO\n\nTESTS :\nSlope 0 : uniforme\nSlope -100 : baisse\nONE : ignore trigger\nRET : redemarre\nReset : silence\nRate 0 : en interne\nSTEP : manuel\n\nMENU NT :\nClock source\nCV / interne / MIDI\nShape / Width\n\nMIDI canal 1\nNote 60 : trigger\n61 : reset / 62 : step\nCC 20-26 : controle\nSorties MIDI : menu\nchoisir peripherique"
+        "text": "LISTEN\nSine -> ENV VCA\n-> volume -> AUDIO\n\nTESTS :\nSlope 0 : uniform\nSlope -100 : falling\nONE : ignore trigger\nRET : restart\nReset : silence\nRate 0 : internal off\nSTEP : manual\n\nNT MENU :\nClock source\nCV / internal / MIDI\nShape / Width\n\nMIDI channel 1\nNote 60 : trigger\n61 : reset / 62 : step\nCC 20-26 : control\nMIDI output : menu\nselect device"
       }
     }
   ],

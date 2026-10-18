@@ -17,7 +17,7 @@
         0
       ],
       "data": {
-        "text": "MULTI BURST NT\nMOTION / 2 VOIX\n\nEngine : 48 kHz\n\nPULSES :\n1 = TRIGGER ALL\n2 = RESET ALL\n\nG1 : 8 bursts\nG2 : 13 bursts\nLoop / ONE\n\nAbsolute\nInternal + CV\nCV : Bipolar\nShape : Morph\n\nSCOPES 1-3 :\nENV / GATE\nBUSY / EOC\nCLOCK / LFO"
+        "text": "MULTI BURST NT\nMOTION / 2 VOICES\n\nEngine : 48 kHz\n\nPULSES :\n1 = TRIGGER ALL\n2 = RESET ALL\n\nG1 : 8 bursts\nG2 : 13 bursts\nLoop / ONE\n\nAbsolute\nInternal + CV\nCV : Bipolar\nShape : Morph\n\nSCOPES 1-3 :\nENV / GATE\nBUSY / EOC\nCLOCK / LFO"
       }
     },
     {
@@ -1382,7 +1382,7 @@
         1
       ],
       "data": {
-        "text": "ECOUTE G1\nSinus -> VCA ENV\n-> volume -> AUDIO\n\nChoisir driver\net sortie audio.\nVolume : 15 %.\n\n3 LFO LENTS\nBipolaires -5/+5 V\nWidth : 0.125 Hz\nInterval : 0.088 Hz\nShape : 0.051 Hz\n\nSCOPES 4-5 :\nG2 ENV / Shape CV\nWidth / Interval CV\n\nComparer :\nCV response DROID\nShape response DROID\nTime depth = 0\n\nPULSES 2 : stop\nPULSES 1 : relance"
+        "text": "LISTEN TO G1\nSine -> ENV VCA\n-> volume -> AUDIO\n\nSelect driver\nand audio output.\nVolume : 15 %.\n\n3 SLOW LFOs\nBipolar -5/+5 V\nWidth : 0.125 Hz\nInterval : 0.088 Hz\nShape : 0.051 Hz\n\nSCOPES 4-5 :\nG2 ENV / Shape CV\nWidth / Interval CV\n\nCompare :\nCV response DROID\nShape response DROID\nTime depth = 0\n\nPULSES 2 : stop\nPULSES 1 : restart"
       }
     },
     {

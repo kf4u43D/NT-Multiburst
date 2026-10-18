@@ -195,13 +195,13 @@ def make_patch(generator, library: Path, scene: dict) -> tuple[dict, dict]:
         f"MULTI BURST NT\nPACK {scene['number']:02d} / 16\n{scene['name']}\n\n"
         "Engine : 48 kHz\n\nPULSES :\n1 = TRIGGER ALL\n2 = RESET ALL\n3 = STEP ALL\n\n"
         "SCOPES 1-3 :\nMIX / G1 GATE\nG1 BUSY / EOC\nG1 CLOCK / LFO\n\n"
-        "CV de modulation\ndesactives au depart\n\nClock CV : None")
+        "Modulation CV\ninitially disabled\n\nClock CV : None")
     modules[12]["data"]["text"] = (
-        "ECOUTE DES 2 VOIX\nENV MIX -> VCA\n-> volume -> AUDIO\n\nChoisir driver\net sortie audio.\nVolume : 15 %.\n\n"
+        "LISTEN TO BOTH VOICES\nENV MIX -> VCA\n-> volume -> AUDIO\n\nSelect driver\nand audio output.\nVolume : 15 %.\n\n"
         "SCOPES 4-5 :\nG2 ENV / Shape CV\nWidth / Interval CV\n\n"
-        "POUR MODULER :\nWidth CV input = 4\nInterval CV input = 5\nShape CV input = 6\n\n"
-        "CLOCK EXTERNE :\nClock input = 2\nClock source =\nInternal + CV\nLFO externe 2.7 Hz\n\n"
-        "PULSES 1 : lancer\nPULSES 2 : arreter\nPULSES 3 : avancer")
+        "TO MODULATE :\nWidth CV input = 4\nInterval CV input = 5\nShape CV input = 6\n\n"
+        "EXTERNAL CLOCK :\nClock input = 2\nClock source =\nInternal + CV\nExternal LFO 2.7 Hz\n\n"
+        "PULSES 1 : trigger\nPULSES 2 : reset\nPULSES 3 : step")
     return patch, dict(zip(names, values))
 
 
@@ -249,33 +249,33 @@ def main() -> int:
     }
     write_json(destination / "catalog.json", catalogue)
     files.append("catalog.json")
-    readme = """# Multi Burst NT : 16 scènes de modulation
+    readme = """# Multi Burst NT: 16 modulation scenes
 
-Ouvrir un des 16 fichiers dans `patches/` avec VCV Rack 2, Fundamental et nt_emu.
-Régler le moteur à 48 kHz. PULSES 1 lance les voix, 2 les réinitialise et 3
-avance d'un burst. Les deux voix passent dans ENV MIX puis le VCA audio ; choisir
-le pilote et le périphérique dans AUDIO 2 pour écouter. Le volume commence à 15 %.
+Open any file in `patches/` with VCV Rack 2, Fundamental and nt_emu. Set the
+engine to 48 kHz. PULSES 1 triggers both voices, 2 resets them and 3 advances
+one burst. ENV MIX feeds the audio VCA. Select your driver and device in
+AUDIO 2; the output volume starts at 15%.
 
-Les modulations sont désactivées pour entendre chaque scène de base. Pour les
-ajouter : Width CV input=4, Interval CV input=5 et Shape CV input=6. Les trois LFO
-bipolaires correspondants tournent à 0,125 / 0,088 / 0,051 Hz. Clock input=None
-laisse les scènes autonomes ; Clock input=2 et Clock source=Internal + CV ajoutent
-le LFO externe 2,7 Hz en Absolute. Hand Steps attend PULSES 3 après son premier burst.
+Modulation is initially disabled. Enable it with Width CV input=4,
+Interval CV input=5 and Shape CV input=6. Their bipolar LFOs run at
+0.125 / 0.088 / 0.051 Hz. Clock input=None uses each scene's own timing;
+Clock input=2 and Clock source=Internal + CV add the external 2.7 Hz LFO
+in Absolute mode. Hand Steps waits for PULSES 3 after its first burst.
 
-Le [catalogue JSON](catalog.json) contient les 25 valeurs par voix, les valeurs
-communes et tous les paramètres réellement exportés. La source évaluée est
-[performance_presets.h](source/performance_presets.h) ; les banques DROID restent
-indépendantes. Le [manifeste](manifest.json) donne les empreintes des fichiers.
+The [JSON catalogue](catalog.json) contains the 25 values per voice, shared
+settings and all exported parameters. It is evaluated directly from
+[performance_presets.h](source/performance_presets.h). DROID banks remain
+independent. The [manifest](manifest.json) lists file checksums.
 
-Les patches enregistrent le chemin absolu de la DLL Windows utilisée lors de
-l'export. Si le projet ou la DLL change de dossier, régénérer depuis le projet :
+Patches store the absolute path to the exported Windows DLL. If the project
+or DLL moves, regenerate them from the project directory:
 
 ```powershell
 python scripts/export-preset-pack.py --library dist/nt_emu/multi_burst.dll
 ```
 """
     if guide.is_file():
-        readme += "\nLe [guide des 16 scènes](guide.md) décrit leurs intentions et leur rappel sur NT.\n"
+        readme += "\nThe [16-scene guide](guide.md) describes each scene and how to load it on NT.\n"
     (destination / "README.md").write_text(readme, encoding="utf-8")
     files.append("README.md")
     manifest = {

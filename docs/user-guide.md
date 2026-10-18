@@ -1,364 +1,352 @@
-# Multi Burst NT : mode d'emploi
+# Multi Burst NT user guide
 
-Multi Burst NT produit deux suites indépendantes d'enveloppes pour piloter des
-VCA, filtres ou autres destinations CV. Chaque générateur est monophonique : un
-burst qui arrive avant la fin de son enveloppe précédente la redémarre. Les deux
-générateurs peuvent partager une horloge musicale et des entrées de modulation.
-G2 est désactivé au chargement pour conserver le fonctionnement des anciens
-presets ; l'activer avec `G2 enabled`.
+Multi Burst NT generates two independent envelope sequences for VCAs, filters
+and other CV destinations. Each generator is monophonic: a burst arriving before
+the previous envelope ends restarts that envelope. Both generators can share a
+musical clock and modulation inputs. G2 is disabled by default; enable it with
+`G2 enabled`.
 
 ## Installation
 
-La cible de cette version de développement est le firmware **1.18.0**. Extraire
-`multi_burst_nt.zip` à la racine de la MicroSD pour obtenir
-`/programs/plug-ins/multi_burst.o`, puis redémarrer le NT. Vérifier le scan sous
-`Misc / Plug-ins / View info…`. Dans `Add algorithm`, choisir `Multi Burst NT`,
-le charger puis l'ajouter. L'objet ARM annonce explicitement l'API 13 (minimum
-firmware **1.15.0**) et utilise le SDK API 13 épinglé ; le chargement réel sur
-le firmware cible 1.18.0 reste à confirmer sur matériel.
+Extract `multi_burst_nt.zip` to the root of the MicroSD card to obtain
+`/programs/plug-ins/multi_burst.o`, then restart the NT. Check the scan under
+`Misc / Plug-ins / View info…`. In `Add algorithm`, select `Multi Burst NT`,
+load it, then add it. The plug-in uses API 13, requiring firmware **1.15.0** or
+later. The target firmware is **1.18.0**; operation on hardware remains to be
+verified.
 
-Ces étapes suivent le [manuel officiel 1.18, pages 69–70](https://www.expert-sleepers.co.uk/downloads/manuals/disting_NT_user_manual_1.18.pdf).
+These steps follow the [official 1.18 manual, pages 69–70](https://www.expert-sleepers.co.uk/downloads/manuals/disting_NT_user_manual_1.18.pdf).
 
-## Prise en main
+## Getting started
 
-Les entrées physiques 1, 2 et 3 reçoivent respectivement trigger, clock et reset.
-Par défaut, la cadence interne est 4 Hz : un trigger lance huit enveloppes de
-100 ms, à niveau maximal de 8 V. Tourner les contrôles habituels du NT pour
-modifier les paramètres. Presser le potentiomètre gauche déclenche, le central
-réinitialise et le droit avance manuellement d'un burst du générateur sélectionné.
-Tourner l'encodeur gauche choisit le focus G1/G2 ; le presser arrête ce générateur.
-Presser l'encodeur droit déclenche les deux générateurs activés.
+Physical inputs 1, 2 and 3 receive trigger, clock and reset respectively.
+The default internal rate is 4 Hz: a trigger starts eight 100 ms envelopes with
+a maximum level of 8 V. Use the NT's usual controls to adjust parameters.
+Press the left pot to trigger, the centre pot to reset, and the right pot to
+advance the selected generator by one burst. Turn the left encoder to select
+G1 or G2; press it to stop that generator. Press the right encoder to trigger
+both enabled generators.
 
-Les actions `Trigger`, `Reset` et `Step` dans les paramètres sont momentanées :
-elles reviennent à Off après activation. Step fonctionne avec toutes les sources
-d'horloge et contourne le diviseur CV.
+The `Trigger`, `Reset` and `Step` parameter actions are momentary: they return
+to Off after activation. Step works with every clock source and bypasses the
+CV divider.
 
-Les pages G1 et G2 règlent chaque voix. Les pages Performance et Shared inputs
-proposent aussi Trigger/Reset/Stop/Step all. Stop annule la séquence sans EOC ;
-reset réinitialise également ses compteurs. Les nouvelles entrées et sorties
-sont réglées sur None par défaut : les assigner aux bus voulus avant utilisation.
+The G1 and G2 pages control each voice. The Performance and Shared inputs pages
+also provide Trigger/Reset/Stop/Step all. Stop cancels the sequence without EOC;
+reset also clears its counters. Additional inputs and outputs default to None:
+assign them to the required buses before use.
 
-## Enveloppe
+## Envelope
 
-| Paramètre | Plage | Défaut | Effet |
+| Parameter | Range | Default | Effect |
 | --- | --- | --- | --- |
-| Bursts | 1–40 | 8 | Nombre mémorisé au trigger. |
-| Shape | 8 formes | Sine | Forme de l'enveloppe en cours. |
-| Width | 20–2500 ms | 100 ms | Durée ; une modification change la vitesse de progression en cours. |
-| Slope | −100 à +100 % | 0 % | Pente mémorisée au trigger. |
-| Level | 0–10 V | 8 V | Niveau maximal, modifiable en cours. |
-| Retrigger | Restart (RET), Ignore (ONE) | Restart | RET recommence ; ONE ignore jusqu'à extinction de la dernière enveloppe. |
-| First burst | Immediate, On clock | Immediate | Enveloppe immédiate ou séquence armée jusqu'à la clock suivante. |
+| Bursts | 1–40 | 8 | Number of bursts, captured at the trigger. |
+| Shape | 8 shapes | Sine | Shape of the current envelope. |
+| Width | 20–2500 ms | 100 ms | Duration; changing it alters the speed of the envelope already in progress. |
+| Slope | −100 to +100% | 0% | Sequence level slope, captured at the trigger. |
+| Level | 0–10 V | 8 V | Maximum level, adjustable during playback. |
+| Retrigger | Restart (RET), Ignore (ONE) | Restart | RET restarts the sequence; ONE ignores triggers until the final envelope has ended. |
+| First burst | Immediate, On clock | Immediate | Starts an envelope immediately or arms the sequence for the next clock. |
 
-Ordre des formes : Sine, Log Down, Log Up, Expo Down, Ramp Up, Triangle,
-Ramp Down, Pulse. Les formes sinusoïdale et triangulaire montent puis descendent ;
-les ramps sont linéaires, les formes log/expo utilisent des profils courbes
-indépendants. Pulse reste haut pendant Width. Les changements de forme, de niveau
-et les redémarrages peuvent introduire une discontinuité CV.
+Shape order: Sine, Log Down, Log Up, Expo Down, Ramp Up, Triangle, Ramp Down,
+Pulse. Sine and Triangle rise and fall; ramps are linear, while the log/expo
+shapes use separate curved profiles. Pulse stays high for Width. Shape and
+level changes, as well as restarts, can introduce CV discontinuities.
 
-À Slope +100 %, les niveaux vont de 4 % à 100 % ; à −100 %, de 100 % à 4 %.
-La progression est linéaire entre bursts. À 0 %, tous sont égaux. Un seul burst
-utilise le niveau complet. La vélocité d'un trigger MIDI multiplie ces niveaux.
+At Slope +100%, levels rise from 4% to 100%; at −100%, they fall from 100% to
+4%. Progression between bursts is linear. At 0%, every burst has the same
+level. A single burst always uses the full level. MIDI trigger velocity
+multiplies these levels.
 
-Les pages de chaque générateur ajoutent :
+Each generator also provides:
 
-| Paramètre | Effet |
+| Parameter | Effect |
 | --- | --- |
-| Loop | Relance après la fin naturelle de la dernière enveloppe. Stop/reset coupe la boucle en cours ; un nouveau trigger peut la relancer. |
-| Mute | Coupe l'enveloppe et Gate ; les compteurs, Busy, Levels, Progress, Clock et Burst continuent. |
-| MIDI velocity | Autorise la vélocité du trigger MIDI à multiplier l'amplitude ; Off utilise la vélocité maximale. |
-| Level trim | Multiplie Level, de 0 à 100 %. |
-| Glide rise / fall | Lisse les changements de gain de pente entre bursts, avec des temps séparés montant/descendant. Le premier niveau est immédiat. |
-| Shape response | Legacy conserve les profils initiaux ; DROID utilise les logarithmes du patch de référence ; Morph ajoute le fondu continu entre formes voisines sous CV. |
+| Loop | Restarts after the final envelope ends naturally. Stop/reset interrupts the current loop; another trigger can start it again. |
+| Mute | Silences Envelope and Gate; counters, Busy, Levels, Progress, Clock and Burst continue. |
+| MIDI velocity | Allows MIDI trigger velocity to scale amplitude; Off uses maximum velocity. |
+| Level trim | Multiplies Level, from 0 to 100%. |
+| Glide rise / fall | Smooths changes in slope gain between bursts, with separate rise and fall times. The first level is immediate. |
+| Shape response | Legacy uses the original profiles; DROID uses the reference patch's logarithmic profiles; Morph adds continuous CV crossfading between adjacent shapes. |
 
-Le glide agit sur les niveaux successifs et leur sortie Levels, pas sur la
-forme temporelle de chaque enveloppe. Les changements de Level restent directs.
-La convention Slope NT reste positive pour une montée ; les presets importés
-du DROID adaptent automatiquement le signe.
+Glide affects successive levels and the Levels output, rather than the time
+profile of each envelope. Level changes remain immediate. Positive NT Slope
+means rising levels; imported DROID presets convert the sign automatically.
 
-## Temps musicaux et deux générateurs
+## Musical timing and two generators
 
-Chaque page timing possède un choix `Absolute` / `Musical`. Absolute utilise
-Width en ms, Rate, les divisions et les temps de glide en ms. Musical utilise
-une référence commune sélectionnée par `Musical clock` : Internal BPM, CV,
-MIDI ou Auto. Tempo et CV clock PPQN décrivent cette référence commune ; les
-deux voix conservent leurs propres rapports de durée et d'intervalle.
+Each timing page has an `Absolute` / `Musical` choice. Absolute uses Width in
+milliseconds, Rate, divisions and glide times in milliseconds. Musical uses a
+shared reference selected by `Musical clock`: Internal BPM, CV, MIDI or Auto.
+Tempo and CV clock PPQN describe this shared reference; each voice keeps its
+own width and interval ratios.
 
-La grille Width ratio et Interval ratio, en noires de référence, est :
+The Width ratio and Interval ratio grid, in reference quarter notes, is:
 
 `1/16, 1/12, 1/8, 1/6, 1/4, 1/3, 1/2, 2/3, 1, 3/2, 2, 3, 4, 6, 8, 16`.
 
-Interval ratio ajoute Off : seuls les steps manuels/externes font alors avancer
-la séquence. Glide rise/fall ratio ajoute Off à la même grille. À 120 BPM,
-un rapport 1 correspond à 500 ms, 1/3 à environ 167 ms, et 3/2 à 750 ms.
-Une durée peut dépasser l'intervalle ; le burst suivant redémarre alors
-l'enveloppe de cette voix.
+Interval ratio also has Off: only manual/external steps then advance the
+sequence. Glide rise/fall ratio adds Off to the same grid. At 120 BPM, a ratio
+of 1 is 500 ms, 1/3 is about 167 ms, and 3/2 is 750 ms. Width may exceed the
+interval; the next burst then restarts that voice's envelope.
 
-La référence externe est mesurée pour placer les subdivisions entre deux
-clocks. Auto privilégie un CV récent, puis une clock MIDI récente dont le
-transport est actif, puis l'interne. Il utilise l'activité du bus, car le NT ne fournit pas au plugin
-la détection d'insertion de câble du DROID. Les rapports permettent notamment
-les triolets et les périodes 3:2, au-delà des divisions binaires existantes.
+The external period is measured to place subdivisions between clock edges.
+Auto prioritises recent CV clock activity, then recent MIDI clock activity
+with an active transport, then the internal clock. It uses bus activity
+because the NT does not expose DROID-style cable detection to the plug-in.
+The ratio grid supports triplets and 3:2 relationships as well as binary
+divisions.
 
-Si une source externe explicite s'arrête, la dernière période mesurée reste
-utilisée pour terminer les enveloppes et glides en cours. L'avance automatique
-suspendue attend la reprise de la clock. En Auto, le changement de source peut
-modifier cette période.
+If an explicitly selected external source stops, the last measured period
+continues to determine the envelopes and glides already in progress.
+Automatic advancement waits for the clock to resume. In Auto, switching
+sources may change that period.
 
-## Presets de générateur
+## Generator presets
 
-Chaque voix dispose de 16 emplacements indépendants dans sa page presets :
-choisir Preset, puis Load preset pour rappeler, Save preset pour mémoriser et
-Factory preset pour retrouver les valeurs usine de cet emplacement. Ces actions
-sont momentanées. La banque utilisateur est enregistrée dans le preset global
-du NT ; enregistrer ce dernier pour conserver les modifications après rappel.
+Each voice has 16 independent slots on its presets page: select Preset, then
+Load preset to recall it, Save preset to store it, or Factory preset to restore
+that slot's factory settings. These actions are momentary. The user bank is
+stored in the NT's global preset; save that preset to retain edits after
+recalling it.
 
-Les sons usine reprennent les deux banques de la référence DROID : sinus,
-logarithmes, percussion, rampes, triangle, ratchets, boucles, glides, triolets et
-rapports 3:2 et 7:5. Le huitième emplacement est Ratchet 40 sur G1 et Ratchet 32
-sur G2. Les sons usine utilisent Musical et Shape response=DROID. Un emplacement
-utilisateur conserve également le mode Absolute et ses temps si ce mode est
-choisi. Le tempo commun, les routages et CV response restent ceux du preset
-global NT. Shape response, y compris Morph, est mémorisé par voix.
+The factory sounds follow the two DROID reference banks: sine, logarithmic,
+percussion, ramp, triangle, ratchet, loop, glide, triplet, 3:2 and 7:5 settings.
+The eighth slot is Ratchet 40 on G1 and Ratchet 32 on G2. Factory sounds use
+Musical timing and Shape response=DROID. A user slot also stores Absolute
+timing and its values when that mode is selected. Shared tempo, routing and
+CV response belong to the global NT preset. Shape response, including Morph,
+is stored per voice.
 
-## Pack de 16 scènes
+## Pack of 16 scenes
 
-La page **Preset pack** propose 16 scènes complètes pour G1 et G2, indépendantes
-des banques utilisateur : choisir **Pack preset**, puis **Load pack preset**.
-Le chargement arrête les deux séquences et ne les déclenche pas ; utiliser
-**Trigger all** ou le bouton de déclenchement commun pour jouer la scène.
-**Stop all** interrompt les boucles. Hand Steps attend les commandes Step après
-le premier burst.
+The **Preset pack** page provides 16 complete G1/G2 scenes, separate from the
+user banks: select **Pack preset**, then **Load pack preset**. Loading stops
+both sequences without triggering them; use **Trigger all** or the shared
+trigger button to play the scene. **Stop all** interrupts loops. Hand Steps
+waits for Step commands after its first burst.
 
-Le pack règle les deux sons, leur activation, les cadences et les paramètres
-communs de clock/CV. Il conserve les routages CV/MIDI, le focus et toutes les
-mémoires utilisateur. Pour entendre les deux voix, assigner G2 Envelope output
-ou Envelope mix output à une sortie disponible. Les routages déjà actifs peuvent
-continuer à moduler les valeurs de base de la scène.
+The pack sets both sounds, their enabled states, rates and shared clock/CV
+parameters. It preserves CV/MIDI routing, focus and all user memories. To hear
+both voices, assign G2 Envelope output or Envelope mix output to an available
+output. Existing active modulation routes can continue to alter the scene's
+base values.
 
-Voir le [catalogue des 16 scènes](preset-pack.md) pour leurs durées, comportements
-et suggestions de modulation. Les patches Rack fournis font entendre directement
-le mix des deux voix, avec les CV de modulation désactivés au départ.
+See the [16-scene catalogue](preset-pack.md) for timings, behaviour and
+modulation suggestions. The supplied Rack patches let you hear the mix of
+both voices directly, with modulation CV initially disabled.
 
-## Horloges absolues et reset
+## Absolute clocks and reset
 
-Ces réglages décrivent le mode Absolute historique. En Musical, utiliser les
-rapports et la référence commune décrits plus haut.
+These settings apply to Absolute mode. For Musical, use the ratios and shared
+reference described above.
 
-| Paramètre | Plage | Défaut |
+| Parameter | Range | Default |
 | --- | --- | --- |
 | Clock source | Internal rate, Internal BPM, CV, MIDI, Internal + CV | Internal rate |
-| Rate | Off ou 0,01–51 Hz | 4 Hz |
+| Rate | Off or 0.01–51 Hz | 4 Hz |
 | Tempo | 20–300 BPM | 120 BPM |
 | Burst division | 1/32, 1/16, 1/8, 1/4, 1/2, 1 bar, 2 bars | 1/16 |
-| CV divider | 1–64 fronts par burst | 1 |
+| CV divider | 1–64 edges per burst | 1 |
 | CV clock PPQN | 1, 2, 4, 8, 12, 24, 48 | 1 |
 | Pulse width | 1–20 ms | 5 ms |
 
-En **Internal rate**, Rate fixe directement la fréquence des bursts ; la sortie
-MIDI Clock considère chaque période comme une noire. Rate Off arrête cette
-cadence. La plage sous 0,24 Hz étend celle du module AJH. En **Internal BPM**, Tempo définit les noires et Burst division les
-bursts. Les valeurs de division en bars supposent quatre noires par mesure.
+In **Internal rate**, Rate directly sets the burst frequency; MIDI Clock output
+treats each period as a quarter note. Rate Off stops this clock. The range below
+0.24 Hz extends beyond the AJH module's range. In **Internal BPM**, Tempo sets
+quarter notes and Burst division sets bursts. Bar divisions assume four quarter
+notes per bar.
 
-En **CV**, chaque front avance le diviseur CV ; un événement de burst arrive
-tous les CV divider fronts. Burst division ne multiplie pas les clocks CV.
-CV clock PPQN indique la résolution de la source pour reconstruire la sortie
-MIDI Clock à partir de deux fronts mesurés. Cette reconstruction s'arrête après
-une absence de fronts supérieure au plus grand de 2 secondes ou trois périodes
-mesurées. Une reprise exige deux fronts pour réestimer le tempo.
+In **CV**, every edge advances the CV divider; a burst event occurs every
+CV divider edges. Burst division does not multiply CV clocks. CV clock PPQN
+specifies the source resolution used to reconstruct MIDI Clock output from
+two measured edges. Reconstruction stops after a gap longer than the greater
+of 2 seconds or three measured periods. Two new edges are needed to estimate
+the tempo again.
 
-En **MIDI**, la clock F8 arrive à 24 impulsions par noire ; Burst division choisit
-3, 6, 12, 24, 48, 96 ou 192 F8 par burst. Start (FA) réinitialise puis lance une
-séquence, Continue (FB) réactive la cadence après Stop. Stop (FC) annule la séquence
-et les notes ; Continue ne recrée pas la séquence annulée. System Reset (FF)
-réinitialise. Le filtre de canal s'applique aux notes et CC, les messages temps
-réel sont des messages système.
+In **MIDI**, F8 clock arrives at 24 pulses per quarter note; Burst division
+selects 3, 6, 12, 24, 48, 96 or 192 F8 messages per burst. Start (FA) resets and
+starts a sequence; Continue (FB) resumes the clock after Stop. Stop (FC)
+cancels the sequence and notes; Continue does not restore that sequence.
+System Reset (FF) resets the generator. Channel filtering applies to notes
+and CCs; real-time messages are system messages.
 
-En **Internal + CV**, les deux sources avancent la même séquence. La cadence
-interne reste indépendante. Deux clocks au même échantillon sont fusionnées ;
-les événements distincts sont conservés. Le MIDI Clock émis suit la cadence
-interne dans ce mode.
+In **Internal + CV**, both sources advance the same sequence. The internal
+clock remains independent. Two clocks on the same sample are merged; separate
+events are retained. MIDI Clock output follows the internal clock in this mode.
 
-Un **reset** remet à zéro la séquence, les compteurs et les phases ; il est
-prioritaire sur un trigger ou une clock au même échantillon. Il libère les notes
-MIDI du plugin et ne produit pas d'EOC.
+A **reset** clears the sequence, counters and phases; it takes priority over
+a trigger or clock on the same sample. It releases the plug-in's MIDI notes
+and does not produce EOC.
 
-## Routage CV
+## CV routing
 
-Les bus se choisissent de 1 à 64, ou None (0). Les entrées 1–12 sont physiques,
-les bus 13–20 correspondent aux sorties physiques 1–8, les suivants sont
-auxiliaires. Les fronts montants sont reconnus à partir de 1 V ; le détecteur se
-réarme à 0,2 V ou moins. Une entrée maintenue haute ne redéclenche pas. Modifier
-le routage vers un signal déjà haut exige un nouveau front.
+Select buses 1–64, or None (0). Inputs 1–12 are physical; buses 13–20 correspond
+to physical outputs 1–8; later buses are auxiliary. Rising edges are detected
+at 1 V or above, with rearming at 0.2 V or below. Holding an input high does
+not retrigger. Changing a route to an already high signal requires a new edge.
 
-| Sortie | Bus par défaut | Prise | Signal |
+| Output | Default bus | Jack | Signal |
 | --- | --- | --- | --- |
-| Envelope | 13 | Sortie 1 | 0 à Level volts, pente et vélocité incluses. |
-| Gate | 14 | Sortie 2 | 5 V pendant chaque enveloppe. |
-| Active | 15 | Sortie 3 | 5 V tant que la séquence est armée ou joue, dernière enveloppe incluse. |
-| EOC | 16 | Sortie 4 | Impulsion 5 V après extinction naturelle de la dernière enveloppe. |
-| Clock | 17 | Sortie 5 | Impulsions 5 V à la cadence des événements de burst, même sans séquence active. |
+| Envelope | 13 | Output 1 | 0 to Level volts, including slope and velocity. |
+| Gate | 14 | Output 2 | 5 V throughout each envelope. |
+| Active | 15 | Output 3 | 5 V while the sequence is armed or playing, including the final envelope. |
+| EOC | 16 | Output 4 | 5 V pulse after the final envelope ends naturally. |
+| Clock | 17 | Output 5 | 5 V pulses at the burst-event rate, even without an active sequence. |
 
-Pulse width règle Clock et EOC ; Gate suit Width. Choisir des bus de sortie
-distincts. Le mode **Add**, par défaut, ajoute la contribution à celle des
-algorithmes précédents ; **Replace** la remplace. La limite 0–10 V concerne la
-contribution du plugin : une somme en Add peut dépasser cette plage.
+Pulse width sets Clock and EOC pulse duration; Gate follows Width. Choose
+separate output buses. **Add**, the default, adds the contribution to that of
+preceding algorithms; **Replace** replaces it. The 0–10 V limit applies to the
+plug-in's contribution: an Add sum can exceed this range.
 
-G2 propose les mêmes sorties, ainsi que Levels, Progress et Burst pour chaque
-voix. Leurs bus, et ceux des sorties communes, valent None au départ.
+G2 provides the same outputs. Each voice also has Levels, Progress and Burst.
+These buses, and the shared output buses, initially use None.
 
-| Sortie supplémentaire | Signal |
+| Additional output | Signal |
 | --- | --- |
-| Levels | 0–10 V représentant le gain de pente lissé pendant Busy, sans Level, trim, vélocité ni mute. |
-| Progress | 0–10 V de progression entre le premier et le dernier burst ; conserve le dernier niveau à la fin naturelle, revient à zéro au stop/reset. Un seul burst donne 0 V. |
-| Burst | Impulsion 5 V de 1 ms au début réel de chaque enveloppe, même sous mute. |
-| ENV mix | Somme des enveloppes des deux voix activées, limitée à 10 V pour la contribution du plugin. |
-| Busy all | 10 V tant qu'au moins un générateur activé est occupé. |
-| Reference clock | Impulsions 5 V à la cadence de la noire commune ; durée Pulse width. |
-| Focus progress | Progress du générateur sélectionné à l'écran. |
+| Levels | 0–10 V representing smoothed slope gain while Busy, excluding Level, trim, velocity and mute. |
+| Progress | 0–10 V progress from the first to the last burst; holds the final level after a natural end and returns to zero on stop/reset. A single burst produces 0 V. |
+| Burst | 1 ms, 5 V pulse at the actual start of each envelope, including when muted. |
+| ENV mix | Sum of both enabled voices' envelopes, with the plug-in contribution limited to 10 V. |
+| Busy all | 10 V while at least one enabled generator is busy. |
+| Reference clock | 5 V pulses at the shared quarter-note rate; duration follows Pulse width. |
+| Focus progress | Progress of the generator selected on screen. |
 
-Les entrées Stop et Step par générateur s'ajoutent aux entrées Trigger/Reset.
-Les entrées communes Trigger/Reset/Stop/Step all agissent sur les voix activées.
+Per-generator Stop and Step inputs complement Trigger/Reset. Shared
+Trigger/Reset/Stop/Step all inputs act on enabled voices.
 
-## Modulation CV
+## CV modulation
 
-Shared inputs propose des bus Count, Width, Interval, Slope, Shape et Amplitude
-CV. Ils sont communs aux deux générateurs, avec CV enable, CV depth et les
-profondeurs Count/Time/Shape/Slope indépendants par voix. Time depth règle à la
-fois Width et Interval. Une entrée sur None n'affecte pas le paramètre. Le choix
-commun **CV response** sélectionne DROID reference ou Bipolar additive. Les
-anciens presets conservent DROID reference.
+Shared inputs provides Count, Width, Interval, Slope, Shape and Amplitude CV
+buses. Both generators share these inputs, with separate CV enable, CV depth
+and Count/Time/Shape/Slope depths per voice. Time depth affects both Width and
+Interval. An input set to None has no effect. Shared **CV response** selects
+DROID reference or Bipolar additive.
 
-En **DROID reference**, une tension 0–5 V choisit une
-position de durée/intervalle ou une forme. Count varie entre 1 et le nombre
-réglé ; Amplitude entre zéro et le niveau réglé. Slope utilise −5 à +5 V pour
-multiplier la pente de base, l'inverser ou l'annuler. La profondeur effectue un
-fondu entre le réglage de base et cette cible, puis les sélections discrètes
-sont arrondies. Un LFO bipolaire est donc tronqué à zéro sur sa moitié négative
-pour les destinations autres que Slope. À Slope=0, sa modulation multiplicative
-reste nulle.
+In **DROID reference**, a 0–5 V signal selects a width/interval position or a
+shape. Count varies from 1 to the set count; Amplitude varies from zero to the
+set level. Slope uses −5 to +5 V to multiply, invert or cancel the base slope.
+Depth blends the base setting with that target, then discrete selections are
+rounded. A bipolar LFO's negative half is therefore clamped to zero for
+destinations other than Slope. At Slope=0, multiplicative modulation remains
+zero.
 
-En **Bipolar additive**, 0 V conserve le réglage, les tensions négatives le
-diminuent et les positives l'augmentent. La tension est bornée à −5…+5 V. Les
-profondeurs limitent l'excursion suivante :
+In **Bipolar additive**, 0 V preserves the setting, negative voltages reduce it
+and positive voltages increase it. Input voltage is limited to −5…+5 V. Depth
+scales the following ranges:
 
-| Destination | Excursion à ±5 V, profondeur 100 % |
+| Destination | Range at ±5 V, 100% depth |
 | --- | --- |
-| Count | ±39 bursts, limité à 1–40 puis arrondi. |
-| Slope | ±100 points de pourcentage, limité à −100…+100 %. |
-| Amplitude | ±10 V, limité à 0–10 V avant Level trim. |
-| Shape | ±7 positions, limité aux huit formes. |
-| Width / Interval, Absolute | Durée / fréquence multipliée par 1/16 à 16 ; Width reste à 20–2500 ms et Rate au plus à 51 Hz. Rate Off reste Off. |
-| Width / Interval, Musical | Déplacement sur la grille de rapports, avec l'arrondi musical et Off pour l'intervalle. |
+| Count | ±39 bursts, limited to 1–40 and rounded. |
+| Slope | ±100 percentage points, limited to −100…+100%. |
+| Amplitude | ±10 V, limited to 0–10 V before Level trim. |
+| Shape | ±7 positions, limited to the eight shapes. |
+| Width / Interval, Absolute | Duration / frequency multiplied by 1/16 to 16; Width stays within 20–2500 ms and Rate at or below 51 Hz. Rate Off stays Off. |
+| Width / Interval, Musical | Movement along the ratio grid, with musical rounding and Off available for the interval. |
 
-Par exemple, Time depth=25 % donne une excursion d'une octave : à −5 V,
-Width et Rate sont divisés par deux ; à +5 V, ils doublent. Les deux tensions
-peuvent être différentes, car Width et Interval possèdent leurs propres entrées.
-Count et Slope restent mémorisés au trigger dans les deux modes. Width, Rate,
-Shape et Amplitude agissent pendant la séquence.
+For example, Time depth=25% gives a one-octave range: at −5 V, Width and Rate
+are halved; at +5 V, they double. Their input voltages can differ because
+Width and Interval have separate inputs. Count and Slope are captured at the
+trigger in both modes. Width, Rate, Shape and Amplitude act during the sequence.
 
-**Shape response=Morph** conserve une position fractionnaire sous Shape CV et
-fait un fondu entre les deux profils adjacents à la même phase. Il peut produire
-des enveloppes intermédiaires sans sauts de sélection. Les positions entières
-correspondent aux formes DROID. C'est une extension expressive NT ; le patch
-DROID et le [module AJH](https://ajhsynth.com/MultiBurst.html) sélectionnent huit formes discrètes. Bipolar additive
-est également un choix NT, dont la loi n'est pas présentée comme celle de l'AJH.
+**Shape response=Morph** retains a fractional Shape CV position and crossfades
+between adjacent profiles at the same phase. It produces intermediate envelopes
+without selection jumps. Integer positions match the DROID shapes. This is an
+NT extension; the DROID patch and [AJH module](https://ajhsynth.com/MultiBurst.html)
+select eight discrete shapes. Bipolar additive is also an NT option, rather
+than a claim about the AJH's modulation law.
 
-Pour une première écoute, ouvrir le [patch Motion](../patches/README.md) : deux
-boucles, trois LFO lents, temps Absolute, horloges Internal + CV et Morph. Pour
-retrouver des phrases moins régulières avec une horloge externe, utiliser
-Absolute puis Internal + CV : chaque front externe ajoute un burst à la
-cadence interne indépendante. Pour une modulation entre voix sur matériel,
-sortir Progress G1 et Levels G2 sur deux prises, puis les recâbler physiquement
-vers les entrées choisies pour Width CV et Amplitude CV. Un bus de sortie de
-cette même instance ne fournit pas à lui seul une boucle de rétroaction interne.
-Commencer avec 20–30 % de profondeur et CV response=DROID reference pour ces signaux positifs. Un
-atténuateur de moitié ramène leur plage 0–10 V à 0–5 V pour exploiter toute la
-course de modulation.
+For a first listen, open the [Motion patch](../patches/README.md): two loops,
+three slow LFOs, Absolute timing, Internal + CV clocks and Morph. For less
+regular phrases with an external clock, use Absolute and Internal + CV:
+each external edge adds a burst to the independent internal clock. To modulate
+one voice with the other on hardware, send Progress G1 and Levels G2 to two
+physical outputs, then patch them into the inputs chosen for Width CV and
+Amplitude CV. An output bus in the same instance does not itself provide an
+internal feedback loop. Start with 20–30% depth and CV response=DROID reference
+for these positive signals. Half attenuation brings their 0–10 V range down
+to 0–5 V to use the full modulation range.
 
-Les mappings de paramètres natifs restent disponibles en complément :
+Native parameter mappings are also available. In the NT mappings, choose the
+parameter, source bus, Volts and Delta. CV adds `CV × Delta / Volts` to the base
+value. For 0–5 V shape selection, set Shape to Sine, then map Shape with Volts=5
+and Delta=7. For Bursts, use base=1, Volts=5, Delta=39. For Width, use base=20 ms,
+Volts=5, Delta=2480 ms. Modulation goes through the host's parameter processing;
+trigger/clock/reset edges are observed on every sample.
 
-Dans les mappings du NT, choisir le paramètre, le bus source, Volts et Delta.
-Le CV ajoute `CV × Delta / Volts` à la valeur de base. Pour retrouver une
-sélection de forme 0–5 V : régler Shape à Sine, puis mapper Shape avec Volts=5
-et Delta=7. Pour Bursts : base=1, Volts=5, Delta=39. Pour Width : base=20 ms,
-Volts=5, Delta=2480 ms. La modulation passe par le traitement des paramètres de
-l'hôte ; les fronts trigger/clock/reset sont observés à chaque échantillon.
+Mappings are saved with the preset. See the
+[official 1.18 manual, pages 45–48](https://www.expert-sleepers.co.uk/downloads/manuals/disting_NT_user_manual_1.18.pdf).
 
-Les mappings sont enregistrés avec le preset. Leur fonctionnement est décrit
-dans le [manuel officiel 1.18, pages 45–48](https://www.expert-sleepers.co.uk/downloads/manuals/disting_NT_user_manual_1.18.pdf).
+## MIDI control
 
-## Contrôle MIDI
+MIDI input channel defaults to **1**. **Off** disables the plug-in's own
+notes/CCs; **Omni** accepts all sixteen channels. Default notes are 60 (trigger),
+61 (reset), 62 (step) and 63 (stop) for G1, and 64, 65, 66 and 67 for G2.
+Each voice has its own channel and notes, configurable from 0 to 127.
+Zero-velocity Note On and Note Off do not trigger; the sequence continues
+after releasing the trigger note.
 
-MIDI input channel vaut **1** par défaut ; **Off** désactive les notes/CC propres
-au plugin, **Omni** accepte les seize canaux. Les notes par défaut sont 60
-(trigger), 61 (reset), 62 (step) et 63 (stop) pour G1 ; 64, 65, 66 et 67 pour G2.
-Chaque voix possède son canal et ses notes, configurables de 0 à 127.
-Un Note On de vélocité zéro et un Note Off ne déclenchent rien ; la séquence
-continue après relâchement du trigger.
-
-| CC G1 | CC G2 | Destination | Valeurs 0–127 |
+| G1 CC | G2 CC | Destination | Values 0–127 |
 | --- | --- | --- | --- |
 | 20 | 30 | Bursts | 1–40 |
-| 21 | 31 | Shape | Sine à Pulse |
-| 22 | 32 | Width | 20–2500 ms en Absolute |
-| 23 | 33 | Rate | 0=Off ; 1–127=0,24–51 Hz en Absolute |
-| 24 | 34 | Slope | −100 à +100 % |
+| 21 | 31 | Shape | Sine to Pulse |
+| 22 | 32 | Width | 20–2500 ms in Absolute |
+| 23 | 33 | Rate | 0=Off; 1–127=0.24–51 Hz in Absolute |
+| 24 | 34 | Slope | −100 to +100% |
 | 25 | 35 | Level | 0–10 V |
-| 26 | — | Tempo commun | 20–300 BPM |
-| 115 | 110 | Trigger | Valeur ≥64 |
-| 116 | 111 | Reset | Valeur ≥64 |
-| 117 | 112 | Step | Valeur ≥64 |
-| 118 | 113 | Stop | Valeur ≥64 |
-| 120, 123 | 120, 123 | Annulation/reset | Toute valeur sur le canal accepté par la voix |
+| 26 | — | Shared Tempo | 20–300 BPM |
+| 115 | 110 | Trigger | Value ≥64 |
+| 116 | 111 | Reset | Value ≥64 |
+| 117 | 112 | Step | Value ≥64 |
+| 118 | 113 | Stop | Value ≥64 |
+| 120, 123 | 120, 123 | Cancel/reset | Any value on a channel accepted by the voice |
 
-Les mappings MIDI natifs du NT permettent aussi d'assigner les paramètres à
-d'autres CC. Éviter d'assigner simultanément ces mêmes CC à d'autres paramètres
-du plugin. L'entrée MIDI du SDK ne fournit pas le port d'origine au callback :
-éviter une boucle entre la destination MIDI émise et la source reçue.
+Native NT MIDI mappings can assign parameters to other CCs. Avoid assigning
+the same CCs to other plug-in parameters at the same time. The SDK's MIDI input
+callback does not identify the originating port: avoid a loop between the
+outgoing MIDI destination and the incoming source.
 
-## Sorties MIDI
+## MIDI outputs
 
-| Paramètre | Plage | Défaut |
+| Parameter | Range | Default |
 | --- | --- | --- |
-| MIDI destination | Off, Breakout, Select Bus, USB et combinaisons | Off |
+| MIDI destination | Off, Breakout, Select Bus, USB and combinations | Off |
 | MIDI output channel | 1–16 | 1 |
 | MIDI output note | 0–127 | 60 |
 | MIDI notes | Off/On | Off |
-| Envelope MIDI CC | Off ou 0–119 | Off |
+| Envelope MIDI CC | Off or 0–119 | Off |
 | MIDI CC rate | 1–100 Hz | 50 Hz |
 | MIDI clock output | Off/On | Off |
 | MIDI transport out | Off/On | Off |
 
-Chaque burst de niveau non nul émet un Note On, suivi d'un Note Off à la fin de son enveloppe ou
-avant le prochain burst. La vélocité représente son niveau maximal sur l'échelle
-0–10 V → 0–127, avec un minimum de 1 pour un Note On. Un niveau maximal nul
-n'émet pas de note. Modifier note, canal,
-destination ou désactiver les notes libère la note sur son ancien routage.
-Mute coupe aussi les notes de cette voix. G2 possède son propre routage de
-notes et d'enveloppe CC ; ses valeurs initiales sont canal 2 et note 64.
+Each burst with a nonzero level emits Note On, followed by Note Off when its
+envelope ends or before the next burst. Velocity represents the peak level,
+mapping 0–10 V to 0–127, with a minimum of 1 for Note On. A zero peak level
+does not emit a note. Changing note, channel or destination, or disabling
+notes, releases the note on its previous route. Mute also silences that voice's
+notes. G2 has its own note and envelope CC routing; its defaults are channel 2
+and note 64.
 
-L'enveloppe CC utilise aussi 0–10 V → 0–127 ; seuls les changements sont émis,
-à la cadence maximale choisie. Un retour final à zéro est transmis sans attendre
-le prochain créneau. Le CV conserve une résolution et une cadence plus élevées.
+Envelope CC also maps 0–10 V to 0–127. Only changes are sent, at the selected
+maximum rate. The final return to zero is sent without waiting for the next
+interval. CV retains a higher resolution and update rate.
 
-MIDI clock output et MIDI transport out utilisent la destination MIDI de G1.
-Clock émet F8 à 24 PPQN : interne, reconstruit du CV ou retransmis du MIDI
-suivant la source. Dès qu'une voix activée utilise Musical, l'émission suit la
-référence commune ; sinon elle suit la clock absolue de G1.
+MIDI clock output and MIDI transport out use G1's MIDI destination. Clock sends
+F8 at 24 PPQN: internally generated, reconstructed from CV or forwarded from
+MIDI, depending on the source. When any enabled voice uses Musical timing,
+output follows the shared reference; otherwise it follows G1's Absolute clock.
 
-Transport out émet Start au premier burst et Stop lorsque les deux séquences
-sont arrêtées ou terminées. Clock peut continuer entre deux séquences.
-Un retrigger RET émet Stop puis Start si l'autre voix n'est pas occupée.
-Si Stop et Start arrivent avant le même bloc audio, le dernier message détermine
-le transport ; System Reset reste prioritaire.
+Transport out sends Start on the first burst and Stop when both sequences
+have stopped or finished. Clock can continue between sequences. A RET retrigger
+sends Stop then Start if the other voice is not busy. If Stop and Start arrive
+before the same audio block, the last message determines transport state;
+System Reset retains priority.
 
-## Validation sur module
+## Hardware verification
 
-Cette version a des vérifications logicielles, mais aucune validation physique.
-Lors du premier essai, vérifier le scan, les tensions des sorties, ONE/RET,
-Loop/Mute/Glide, les resets simultanés, les horloges absolues et musicales,
-la banque utilisateur et les Note Off. La
-[comparaison avec le patch DROID](reference-comparison.md) décrit les
-conventions adaptées et les limites de fidélité ; les mesures sur matériel
-restent nécessaires pour comparer précisément les courbes.
+Software checks have passed; physical hardware validation remains pending.
+On the first hardware test, check plug-in scanning, output voltages, ONE/RET,
+Loop/Mute/Glide, simultaneous resets, Absolute and Musical clocks, the user
+bank and Note Off messages. The [DROID comparison](reference-comparison.md)
+explains adapted conventions and fidelity limits. Hardware measurements are
+still needed for a precise comparison of the curves.

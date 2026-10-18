@@ -1,98 +1,92 @@
-# Vérification locale du 18 octobre 2026
+# Validation
 
-La version de développement **0.4** ajoute un pack de 16 scènes à deux voix,
-indépendant des banques utilisateur, aux fonctions de modulation de la version 0.3.
-Le SDK reste figé à l'API 13, commit
-`f440d20c2a96a9ca43892c7418a1d8185ad47eb5` ; firmware minimum 1.15.0,
-cible de validation 1.18.0. Le chargement sur matériel reste à effectuer.
+Software verification completed on **18 October 2026**. The hardware build uses
+API 13, pinned SDK commit `f440d20c2a96a9ca43892c7418a1d8185ad47eb5`.
+Minimum firmware: 1.15.0. Validation target: 1.18.0.
+Physical hardware testing is still pending.
 
-| Vérification | Résultat |
+| Check | Result |
 | --- | --- |
-| Moteur natif | Réussite : anciens comportements, boucle/EOC, mute/glide, courbes, morphing sans remise à zéro de phase et modulation temporelle continue. |
-| Horloge musicale | Grille des 16 rapports, triolets, deux timings communs, CV/MIDI/Auto, PPQN 1 à 48, transport et changements de fréquence d'échantillonnage vérifiés. |
-| Adaptation SDK | 34 cas réussis à 44,1, 48 et 96 kHz : fonctions historiques, modulation, transport, mémoires et les 16 scènes du pack. |
-| Presets usine | Comparaison indépendante des 32 × 19 valeurs avec l'INI DROID réussie ; signe de pente adapté à la convention NT. |
-| Persistance | 169 paramètres ; les 167 indices précédents sont inchangés. Banques JSON de 25 champs conservées ; charger une scène ne modifie pas les mémoires utilisateur. |
-| Compilation native | Clang 22.1, C++17, avertissements traités comme erreurs. |
-| Analyse statique | clang-tidy sur les deux sources du projet : aucune erreur ; diagnostics des en-têtes externes filtrés. |
-| Compilation ARM | Arm GNU GCC 14.3, Cortex-M7, Thumb, hard float, PIC : réussite. |
-| Inspection ARM | ELF32 little endian ARM REL, EABI5, arguments VFP et pluginEntry global ; contrat API 13 conservé. |
-| Archive | Un seul fichier, programs/plug-ins/multi_burst.o ; contenu et empreinte vérifiés par le script. |
-| Émulateur | DLL Windows reconstruite ; DSP des bibliothèques Rack/Fundamental/nt_emu installées et aller-retour des banques JSON vérifiés. |
-| Disting NT physique | Non testé : chargement, interface, tensions, jitter, MIDI externe et charge CPU à confirmer. |
+| Native engine | Passed: sequence behavior, loop/EOC, mute/glide, curves, phase-continuous morphing and continuous timing modulation. |
+| Musical clock | Passed: 16 ratios, triplets, two shared-clock timings, CV/MIDI/Auto, PPQN 1–48, transport and sample-rate changes. |
+| SDK integration | 34 cases passed at 44.1, 48 and 96 kHz, covering modulation, transport, banks and all 16 pack scenes. |
+| Factory presets | Independent comparison of 32 × 19 values against the DROID INI passed; slope sign follows the NT convention. |
+| Persistence | 169 parameters; all 167 preceding indices unchanged. Banks retain their 25-field JSON records; scene loading preserves user slots. |
+| Native build | Clang 22.1, C++17, warnings treated as errors. |
+| Static analysis | clang-tidy reported no errors in either project source; external-header diagnostics filtered. |
+| ARM build | Passed with Arm GNU GCC 14.3, Cortex-M7, Thumb, hard float and PIC. |
+| ARM inspection | ELF32 little-endian ARM REL, EABI5, VFP arguments, global pluginEntry and explicit API 13 contract. |
+| NT archive | Exactly one file, programs/plug-ins/multi_burst.o; content and hash verified. |
+| Emulator | Windows DLL rebuilt; installed Rack/Fundamental/nt_emu DSP and JSON bank round-trip verified. |
+| Physical disting NT | Pending: loading, interface, voltages, jitter, external MIDI and CPU use. |
 
-L'objet ARM livré fait **61 600 octets** avec ses métadonnées ELF et relocations.
-Ses sections contiennent **18 728 octets de code**, **6 190 octets de constantes**,
-**3 444 octets de métadonnées initialisées** et aucune .bss statique.
-L'état des voix et banques est réservé par instance auprès de l'hôte.
-Ces tailles ne sont pas une mesure de charge CPU.
+The supplied ARM object is **61,600 bytes**, including ELF metadata and
+relocations. Sections contain **18,728 bytes of code**, **6,190 bytes of
+constants**, **3,444 bytes of initialized metadata**, and no static `.bss`.
+Voice and bank state is allocated per instance by the host. These sizes do not
+measure CPU use.
 
-SHA-256 de l'objet livré :
+Object SHA-256:
 
 `17448fc85a4fc62a9ff9182037c0dec1e3d6972dc9a2b33afbb78033daf6a9ec`
 
-Le vérificateur accepte uniquement les exports NT du SDK figé et les signatures
-exactes des neuf méthodes JSON utilisées, également déclarées dans son en-tête
-serialisation.h. Aucun helper de conversion/division 64 bits, libm, allocation
-ou runtime C++ supplémentaire n'est importé ; memcpy, memset et le pseudo-symbole PIC
-sont conservés. Les empreintes des en-têtes figurent dans le rapport ARM.
+The verifier permits only pinned-SDK NT exports and the exact signatures of
+nine JSON methods declared in `serialisation.h`. No additional 64-bit
+conversion/division helper, libm, allocator or C++ runtime is imported.
+`memcpy`, `memset` and the PIC pseudo-symbol remain visible. Header hashes are
+included in the ARM report.
 
-## Vérification Rack / nt_emu
+## Rack / nt_emu
 
-Le test utilise libRack, Fundamental 2.6.4 et nt_emu 2.0.2 réellement installés,
-sans fenêtre graphique, périphérique audio ou modification du profil utilisateur.
-La DLL annonce l'API 8 pour l'émulateur et limite les routages à 28 bus.
+Tests use the installed libRack, Fundamental 2.6.4 and nt_emu 2.0.2 libraries,
+without a GUI, audio device or user-profile changes. The DLL advertises API 8
+for this emulator and limits routing to 28 buses.
 
-Le patch restaure les 169 paramètres. Le banc vérifie huit enveloppes de
-100 ms, le crescendo de 0,320 à 7,999 V, l'EOC de 5 ms et le reset silencieux.
-Les périodes CV et internes sont de 12 000 échantillons, à un échantillon près ;
-le décalage observé dans la chaîne CV est de quatre échantillons. La voie
-sinus/VCA produit une valeur RMS d'environ 0,097 V.
+The reference patch restores all 169 parameters. The test checks eight 100 ms
+envelopes, a crescendo from 0.320 to 7.999 V, a 5 ms EOC and silent reset.
+CV and internal clock periods are 12,000 samples, within one sample; the
+observed CV-chain delay is four samples. The sine/VCA path produces about
+0.097 V RMS.
 
-Deux sons utilisateur différents sont ensuite sauvegardés, remplacés, rechargés
-par le vrai parseur JSON de nt_emu et rappelés : les valeurs des deux banques
-sont retrouvées. Le format plat évite la limitation des tableaux imbriqués du
-parseur de cet émulateur. Les banques du firmware utilisent le même schéma.
-Le contrôle MIDI externe et l'affichage physique restent hors de ces tests.
+Two different user sounds are saved, replaced, reloaded through nt_emu's real
+JSON parser, then recalled. Both banks recover their values. Flat records avoid
+this emulator parser's nested-array limitation; the firmware uses the same
+schema. External MIDI and the physical display are outside these tests.
 
-Le patch Motion est également exécuté pendant 12 secondes dans les bibliothèques
-réelles : les trois entrées de modulation reçoivent des tensions bipolaires,
-les deux voix restent actives et leurs sorties restent dans 0–10 V. G2 atteint
-7 V ; les intervalles entre fronts de clock varient de 290 à 17 776 échantillons.
-Les segments hauts de Gate vont de 1 830 à 46 720 échantillons. Ces segments
-peuvent contenir plusieurs enveloppes qui se redéclenchent et ne constituent pas
-une mesure de Width. Ce test démontre la variation temporelle du patch, sans
-prétendre mesurer le caractère sonore d'un AJH physique.
+The Motion patch also runs for 12 seconds through the installed libraries.
+Three modulation inputs receive bipolar CV, both voices stay active and their
+outputs remain within 0–10 V. G2 reaches 7 V. Clock edge intervals range from
+290 to 17,776 samples, and high Gate segments from 1,830 to 46,720 samples.
+Gate segments may contain several retriggered envelopes and do not measure
+Width. This verifies timing variation without measuring an AJH module's sound.
 
-Le journal Motion local est `build/rack-motion-smoke/result.txt` ; le
-[patch à ouvrir](../patches/Multi_Burst_NT-motion.vcv) possède ses propres scopes
-et laisse le choix du périphérique audio à l'utilisateur.
+The local Motion log is `build/rack-motion-smoke/result.txt`. The
+[interactive patch](../patches/Multi_Burst_NT-motion.vcv) includes scopes and
+leaves audio-device selection to the user.
 
-## Pack de 16 scènes
+## 16-scene preset pack
 
-Les 16 scènes sont calculées depuis le même en-tête C++ pour le plugin et les
-exports Rack. Le contrôle natif joue chacune sans CV externe et vérifie les deux
-voix, le mix borné, le chargement silencieux et Stop. Un autre cas remplace deux
-voix dont des notes MIDI sont tenues : les Note Off sont envoyés, les triggers et
-sauvegardes déjà en attente sont annulés, les routages et les banques sauvegardées
-restent identiques.
+Plugin scenes and Rack exports use the same C++ header. Native tests play each
+scene without external CV and check both voices, bounded mix, silent loading
+and Stop. A separate case replaces voices with held MIDI notes: Note Off is
+sent, queued triggers and saves are cleared, and routing and saved banks remain
+unchanged.
 
-Les 16 patches exportés ont été instanciés dans les vraies bibliothèques Rack
-avec restauration des 169 paramètres et vérification des ports. Neuf ont aussi
-été joués : Drum Pair, Crossing Levels, Slow Glide, Morph Breathing, Hand Steps,
-Triplet Weave, Seven Against Five, Dotted Lanterns et Long Tide. Les sorties des
-deux voix et du mix restent bornées, la voie audio est non nulle, les boucles
-continuent et Stop/Reset n'émettent pas d'EOC. Hand Steps avance avec trois
-impulsions réelles du troisième bouton PULSES après sa première attaque.
+All 16 exported patches were instantiated in the installed Rack libraries with
+169-parameter restoration and port checks. Nine were also played: Drum Pair,
+Crossing Levels, Slow Glide, Morph Breathing, Hand Steps, Triplet Weave, Seven
+Against Five, Dotted Lanterns and Long Tide. Voice and mix outputs stay bounded,
+the audio path is nonzero, loops continue, and Stop/Reset emit no EOC. Hand Steps
+advances with three actual impulses from the third PULSES button after its first
+attack.
 
-Les journaux locaux sont dans `build/rack-pack-smoke/`. Le ZIP du
-pack a été extrait puis contrôlé : 16 fichiers VCV, catalogue, guide et sources,
-avec concordance des SHA-256 du manifeste, de l'en-tête et de la DLL utilisée.
-Le [catalogue](preset-pack.md) décrit les gestes et modulations facultatives.
+Local logs are in `build/rack-pack-smoke/`. The extracted ZIP was checked for
+16 VCV files, catalog, guide and sources, including matching manifest, header
+and DLL SHA-256 hashes. The [catalog](preset-pack.md) describes each scene and
+optional modulation.
 
-Le rapport d'inspection publié est [object_report.json](../downloads/v0.4/object_report.json),
-avec le [manifeste portable](../downloads/v0.4/manifest.json). Le manifeste complet
-de compilation reste dans `dist/build_manifest.json`, et le journal local du
-test Rack dans `build/rack-smoke/result.txt`. Les choix
-fonctionnels sont détaillés dans la [comparaison DROID/NT](reference-comparison.md).
-Aucun tag ni release distant n'a été créé.
+Published reports: [ARM object inspection](../downloads/v0.4/object_report.json)
+and [portable manifest](../downloads/v0.4/manifest.json). The full local build
+manifest is `dist/build_manifest.json`; the reference Rack log is
+`build/rack-smoke/result.txt`. Functional choices are documented in the
+[reference comparison](reference-comparison.md).
